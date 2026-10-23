@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Masked Voice Party Game</title>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; margin: 0; padding: 30px; }
+        .card { background: #1e293b; max-width: 500px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
+        input, select, button { width: 100%; padding: 12px; margin-top: 15px; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; }
+        input { background: #334155; color: white; }
+        button { background: #6366f1; color: white; font-weight: bold; cursor: pointer; }
+        button:hover { background: #4f46e5; }
+        button.danger { background: #ef4444; }
+        .hidden { display: none !important; }
+        ul { list-style: none; padding: 0; text-align: left; }
+        li { background: #334155; margin-top: 8px; padding: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🎭 Masked Voice Game</h1>
+        
+        <!-- Login Screen -->
+        <div id="login-screen">
+            <p>Enter your details to join the game:</p>
+            <input type="text" id="realNameInput" placeholder="Your Real Name (Hidden until the end)">
+            <input type="text" id="codenameInput" placeholder="Secret Codename (e.g. Ghost)">
+            <button onclick="joinGame()">Join Lobby</button>
+        </div>
+
+        <!-- Lobby Screen -->
+        <div id="lobby-screen" class="hidden">
+            <h2>Waiting Room</h2>
+            <ul id="playerList"></ul>
+            <button id="startBtn" class="hidden" onclick="startRound()">Start Game Round</button>
+        </div>
+
+        <!-- Game Play Screen -->
+        <div id="game-screen" class="hidden">
+            <h2 id="gameTitle">Game in Progress</h2>
+            <div id="speakerSection" class="hidden">
+                <p>You are the speaker! Record your heavily disguised message:</p>
+                <button id="recBtn" onclick="toggleRecording()">🔴 Start Recording</button>
+                <p id="recStatus"></p>
+            </div>
+            <div id="listenerSection" class="hidden">
+                <p>Listen to the anonymous voice:</p>
+                <audio id="audioPlayback" controls style="width:100%; margin-top:15px;"></audio>
+                <p>Who spoke this?</p>
+                <select id="guessSelect"></select>
+                <button onclick="submitGuess()">Submit Guess</button>
+            </div>
+        </div>
+
+        <!-- Reveal Screen -->
+        <div id="reveal-screen" class="hidden">
+            <h2>🎉 Grand Reveal!</h2>
+            <p id="revealText" style="font-size: 18px; margin: 20px 0;"></p>
+            <button onclick="location.reload()">Play Again</button>
+        </div>
+    </div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyCriql3I26apEE5QzIPabsOMApnA4cx0xY",
+        authDomain: "masked-voices-3b874.firebaseapp.com",
+        databaseURL: "https://masked-voices-3b874-default-rtdb.firebaseio.com",
+        projectId: "masked-voices-3b874",
+        storageBucket: "masked-voices-3b874.appspot.com",
+        messagingSenderId: "465930077064",
+        appId: "1:465930077064:web:b56eab39e09cc8d5adb03d"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    let myId = 'user_' + Math.random().toString(36).substring(2, 9);
+    let myData = {};
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    let audioCtx, modulator;
+
+    function joinGame() {
+        const realName = document.getElementById('realNameInput').value.trim();
+        const codename = document.getElementById('codenameInput').value.trim();
+        if (!realName || !codename) { alert('Fill in both fields!'); return; }
+
+        myData = { realName, codename };
+        
+        db.ref('players/' + myId).set(myData);
+        db.ref('players/' + myId).onDisconnect().remove();
+
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('lobby-screen').classList.remove('hidden');
+
+        listenToGameState();
+    }
+
+    function listenToGameState() {
+        db.ref('players').on('value', snapshot => {
+            const players = snapshot.val() || {};
+            const list = document.getElementById('playerList');
+            list.innerHTML = '';
+            
+            const playerIds = Object.keys(players);
+            let isFirst = playerIds[0] === myId;
+
+            for (let id in players) {
+                const li = document.createElement('li');
+                li.innerText = players[id].codename + (id === playerIds[0] ? ' (Host)' : '');
+                list.appendChild(li);
+            }
+
+            if (isFirst && playerIds.length >= 1) {
+                document.getElementById('startBtn').classList.remove('hidden');
+            }
+        });
+
+        db.ref('gameState').on('value', snapshot => {
+            const state = snapshot.val();
+            if (!state) return;
+
+            document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+
+            if (myId === state.speakerId) {
+                document.getElementById('gameTitle').innerText = "Your Turn to Speak!";
+                document.getElementById('speakerSection').classList.remove('hidden');
+                setupRecorder();
+            } else {
+                document.getElementById('gameTitle').innerText = "Listen & Guess!";
+                document.getElementById('listenerSection').classList.remove('hidden');
+                loadGuessOptions();
+            }
+
+            if (state.audioData) {
+                document.getElementById('audioPlayback').src = state.audioData;
+            }
+
+            if (state.reveal) {
+                document.getElementById('game-screen').classList.add('hidden');
+                document.getElementById('reveal-screen').classList.remove('hidden');
+                document.getElementById('revealText').innerHTML = `
+                    The speaker was <b>${state.speakerCodename}</b>!<br>
+                    Real name: <span style="color:#38bdf8;"><b>${state.speakerRealName}</b></span>
+                `;
+            }
+        });
+    }
+
+    function startRound() {
+        db.ref('players').once('value', snapshot => {
+            const players = snapshot.val();
+            const ids = Object.keys(players);
+            const randomSpeakerId = ids[Math.floor(Math.random() * ids.length)];
+
+            db.ref('gameState').set({
+                speakerId: randomSpeakerId,
+                speakerCodename: players[randomSpeakerId].codename,
+                speakerRealName: players[randomSpeakerId].realName,
+                audioData: null,
+                reveal: false
+            });
+        });
+    }
+
+    async function setupRecorder() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+            const source = audioCtx.createMediaStreamSource(stream);
+
+            const distortion = audioCtx.createWaveShaper();
+            distortion.curve = makeDistortionCurve(300);
+
+            modulator = audioCtx.createOscillator();
+            modulator.type = "sawtooth";
+            modulator.frequency.value = 40;
+            const ringModGain = audioCtx.createGain();
+            modulator.connect(ringModGain.gain);
+            modulator.start();
+
+            const biquadFilter = audioCtx.createBiquadFilter();
+            biquadFilter.type = "lowpass";
+            biquadFilter.frequency.value = 800;
+
+            const destination = audioCtx.createMediaStreamDestination();
+            source.connect(distortion);
+            distortion.connect(ringModGain);
+            ringModGain.connect(biquadFilter);
+            biquadFilter.connect(destination);
+
+            mediaRecorder = new MediaRecorder(destination.stream);
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(audioChunks, { type: "audio/webm" });
+                const reader = new FileReader();
+                reader.readAsDataURL(blob);
+                reader.onloadend = () => {
+                    db.ref('gameState/audioData').set(reader.result);
+                    document.getElementById('recStatus').innerText = "Masked audio uploaded successfully!";
+                };
+            };
+        } catch (err) { alert("Microphone access is required!"); }
+    }
+
+    function makeDistortionCurve(amount) {
+        const k = typeof amount === "number" ? amount : 50;
+        const n_samples = 44100;
+        const curve = new Float32Array(n_samples);
+        const deg = Math.PI / 180;
+        for (let i = 0; i < n_samples; ++i) {
+            const x = (i * 2) / n_samples - 1;
+            curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+        }
+        return curve;
+    }
+
+    function toggleRecording() {
+        const btn = document.getElementById('recBtn');
+        if (!isRecording) {
+            audioChunks = [];
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            mediaRecorder.start();
+            isRecording = true;
+            btn.innerText = "⏹ Stop & Upload Recording";
+            btn.classList.add('danger');
+            document.getElementById('recStatus').innerText = "Recording...";
+        } else {
+            mediaRecorder.stop();
+            isRecording = false;
+            btn.classList.add('hidden');
+            if (modulator) try { modulator.stop(); } catch(e) {}
+        }
+    }
+
+    function loadGuessOptions() {
+        db.ref('players').once('value', snapshot => {
+            const players = snapshot.val() || {};
+            const select = document.getElementById('guessSelect');
+            select.innerHTML = '';
+            for (let id in players) {
+                if (id !== myId) {
+                    const opt = document.createElement('option');
+                    opt.value = players[id].codename;
+                    opt.innerText = players[id].codename;
+                    select.appendChild(opt);
+                }
+            }
+        });
+    }
+
+    function submitGuess() {
+        db.ref('gameState/reveal').set(true);
+    }
+</script>
+</body>
+</html>

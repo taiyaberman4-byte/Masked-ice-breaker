@@ -38,7 +38,7 @@
                 <h3>📖 How to Play</h3>
                 <ul>
                     <li><b>Enter Details:</b> Type your real name (kept secret until the end) and a secret Codename.</li>
-                    <li><b>The Game:</b> Each round, a prompt is given. One player answers secretly under their codename.</li>
+                    <li><b>The Game:</b> Each round, a unique prompt is given to a player. They answer secretly under their codename.</li>
                     <li><b>Guessing:</b> Everyone else reads the response and guesses which <i>real person</i> wrote it.</li>
                     <li><b>Scoring:</b> Earn +1 point for every correct guess. No reveals happen until the final leaderboard!</li>
                 </ul>
@@ -112,7 +112,7 @@
             <div id="leaderboardContainer" style="text-align: left; margin: 20px 0;"></div>
             <h3>📜 Full Game History</h3>
             <div id="recapContainer" style="text-align: left; margin-top: 15px;"></div>
-            <button onclick="location.reload()" style="margin-top: 20px;">Play Again 🔄</button>
+            <button onclick="resetGameSession()" style="margin-top: 20px;">Play Again 🔄</button>
         </div>
     </div>
 
@@ -137,7 +137,9 @@
     const QUESTION_PACKS = {
         hesATen: [
             "He/She is a 10, but... needs your location 24/7 and texts non-stop.",
-            "He/She is a 10, but... still talks to their ex's mom every day.",
+            "He/She is a 10, but... always brings up old things in arguments.",
+            "He/She is a 10, but... never takes it upon themselves to make plans to go out and always relies on you.",
+            "He/She is a 10, but... still talks to their ex's family every day.",
             "He/She is a 10, but... chews food with their mouth wide open.",
             "He/She is a 10, but... refuses to tip at any restaurant.",
             "He/She is a 10, but... wears socks with sandals everywhere.",
@@ -280,16 +282,16 @@
         const players = pSnap.val();
         const ids = Object.keys(players);
 
-        // Build Round Schedule with randomized playlist shuffle per round cycle
+        // Build Round Schedule with completely randomized questions for every player's turn
         let schedule = [];
         const pack = QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen;
         
         for (let r = 0; r < roundsPerPlayer; r++) {
-            const prompt = pack[r % pack.length];
-            // Shuffle player order randomly for every set/round cycle
             const shuffledIds = shuffleArray(ids);
             for (let id of shuffledIds) {
-                schedule.push({ speakerId: id, prompt: prompt });
+                // Pick a random question for every single individual player's turn
+                const randomPrompt = pack[Math.floor(Math.random() * pack.length)];
+                schedule.push({ speakerId: id, prompt: randomPrompt });
             }
         }
 
@@ -307,6 +309,12 @@
             history: [],
             gameOver: false
         });
+    }
+
+    function resetGameSession() {
+        // Wipes out old game state completely from Firebase so it starts fresh
+        db.ref('gameState').remove();
+        location.reload();
     }
 
     function submitResponse() {

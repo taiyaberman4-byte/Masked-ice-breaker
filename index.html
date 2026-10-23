@@ -3,31 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masked Voice Party Game</title>
+    <title>Masked Party Icebreaker Game</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; margin: 0; padding: 30px; }
-        .card { background: #1e293b; max-width: 500px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); }
-        input, select, button { width: 100%; padding: 12px; margin-top: 15px; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; }
-        input { background: #334155; color: white; }
-        button { background: #6366f1; color: white; font-weight: bold; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; margin: 0; padding: 20px; }
+        .card { background: #1e293b; max-width: 550px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        input, select, textarea, button { width: 100%; padding: 12px; margin-top: 12px; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, textarea, select { background: #334155; color: white; }
+        textarea { resize: vertical; min-height: 80px; }
+        button { background: #6366f1; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background: #4f46e5; }
-        button.danger { background: #ef4444; }
         .hidden { display: none !important; }
         ul { list-style: none; padding: 0; text-align: left; }
-        li { background: #334155; margin-top: 8px; padding: 10px; border-radius: 4px; }
+        li { background: #334155; margin-top: 8px; padding: 10px; border-radius: 6px; }
+        .prompt-box { background: #0284c7; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin: 15px 0; }
+        .response-box { background: #475569; padding: 15px; border-radius: 8px; font-style: italic; margin: 15px 0; word-break: break-word; }
+        .score-badge { background: #22c55e; color: black; padding: 4px 10px; border-radius: 12px; font-weight: bold; float: right; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>🎭 Masked Voice Game</h1>
+        <h1>🎭 Masked Icebreaker Game</h1>
         <p id="roundIndicator" style="color: #38bdf8; font-weight: bold;"></p>
         
         <!-- Login Screen -->
         <div id="login-screen">
-            <p>Enter your details to join the game:</p>
+            <p>Enter your details to join:</p>
             <input type="text" id="realNameInput" placeholder="Your Real Name (Hidden until the end)">
             <input type="text" id="codenameInput" placeholder="Secret Codename (e.g. Ghost)">
             <button onclick="joinGame()">Join Lobby</button>
@@ -37,31 +40,64 @@
         <div id="lobby-screen" class="hidden">
             <h2>Waiting Room</h2>
             <ul id="playerList"></ul>
-            <button id="startBtn" class="hidden" onclick="startGameSession()">Start Multi-Round Game</button>
+            
+            <div id="hostControls" class="hidden" style="margin-top:20px; border-top:1px solid #475569; padding-top:15px;">
+                <p><b>Host Game Setup:</b></p>
+                <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Select Game Pack:</label>
+                <select id="gameModeSelect">
+                    <option value="hesATen">He/She is a 10, but...</option>
+                    <option value="wouldYouRather">Would You Rather...</option>
+                    <option value="mostLikely">Most Likely To...</option>
+                </select>
+
+                <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Rounds Per Player:</label>
+                <select id="roundsSelect">
+                    <option value="1">1 Round Each</option>
+                    <option value="3">3 Rounds Each</option>
+                    <option value="5" selected>5 Rounds Each</option>
+                </select>
+
+                <button onclick="startGameSession()">Start Game 🚀</button>
+            </div>
         </div>
 
         <!-- Game Play Screen -->
         <div id="game-screen" class="hidden">
             <h2 id="gameTitle">Game in Progress</h2>
+            
+            <!-- Speaker Section -->
             <div id="speakerSection" class="hidden">
-                <p>You are the speaker this round! Record your secret message (it will be deepened):</p>
-                <button id="recBtn" onclick="toggleRecording()">🔴 Start Recording</button>
-                <p id="recStatus"></p>
+                <div class="prompt-box" id="speakerPrompt"></div>
+                <textarea id="speakerResponseInput" placeholder="Type your response or rating here..."></textarea>
+                <button onclick="submitResponse()">Submit Secret Answer</button>
             </div>
+
+            <!-- Waiting for Speaker Section -->
+            <div id="waitingForSpeakerSection" class="hidden">
+                <p>Waiting for <b id="currentSpeakerCodename" style="color:#38bdf8;"></b> to write their response...</p>
+            </div>
+
+            <!-- Listener Section -->
             <div id="listenerSection" class="hidden">
-                <p>Listen to the masked deep voice:</p>
-                <audio id="audioPlayback" controls style="width:100%; margin-top:15px;"></audio>
-                <p>Who spoke this?</p>
+                <p>Read the anonymous response below:</p>
+                <div class="prompt-box" id="listenerPrompt"></div>
+                <div class="response-box" id="listenerResponse"></div>
+                <p>Which real person wrote this?</p>
                 <select id="guessSelect"></select>
-                <button onclick="submitGuess()">Submit Guess & Next Turn</button>
+                <button onclick="submitGuess()">Submit Guess & Next</button>
+            </div>
+
+            <div id="waitingForGuessesSection" class="hidden">
+                <p>Your guess has been recorded! Waiting for others to submit...</p>
             </div>
         </div>
 
-        <!-- Final Reveal Screen -->
+        <!-- Final Leaderboard & Recap Screen -->
         <div id="reveal-screen" class="hidden">
-            <h2>🎉 Final Game Recap!</h2>
-            <p>All rounds are complete! Here is who everyone actually was:</p>
-            <div id="recapContainer" style="text-align: left; margin-top: 20px;"></div>
+            <h2>🎉 Final Leaderboard & Recap!</h2>
+            <div id="leaderboardContainer" style="text-align: left; margin: 20px 0;"></div>
+            <h3>📜 Full Game History</h3>
+            <div id="recapContainer" style="text-align: left; margin-top: 15px;"></div>
             <button onclick="location.reload()" style="margin-top: 20px;">Play Again 🔄</button>
         </div>
     </div>
@@ -82,10 +118,45 @@
 
     let myId = 'user_' + Math.random().toString(36).substring(2, 9);
     let myData = {};
-    let mediaRecorder;
-    let audioChunks = [];
-    let isRecording = false;
-    let audioCtx;
+
+    // --- QUESTION PACKS (150+ Questions combined) ---
+    const QUESTION_PACKS = {
+        hesATen: [
+            "He/She is a 10, but... needs your location 24/7 and texts non-stop.",
+            "He/She is a 10, but... still talks to their ex's mom every day.",
+            "He/She is a 10, but... chews food with their mouth wide open.",
+            "He/She is a 10, but... refuses to tip at any restaurant.",
+            "He/She is a 10, but... wears socks with sandals everywhere.",
+            "He/She is a 10, but... thinks the Earth is flat.",
+            "He/She is a 10, but... clap when the airplane lands.",
+            "He/She is a 10, but... puts ketchup on expensive steak.",
+            "He/She is a 10, but... leaves their dishes in the sink for 2 weeks.",
+            "He/She is a 10, but... talks in a baby voice when they want something.",
+            "He/She is a 10, but... doesn't wash their hands after using the bathroom.",
+            "He/She is a 10, but... asks for a sip of your drink and drinks half of it.",
+            "He/She is a 10, but... gets angry whenever they lose a board game.",
+            "He/She is a 10, but... calls their parents during your dates.",
+            "He/She is a 10, but... wears sunglasses indoors at night."
+        ],
+        wouldYouRather: [
+            "Would you rather... accidentally send an embarrassing text to your boss or your ex?",
+            "Would you rather... give up social media forever or never watch movies again?",
+            "Would you rather... always have to speak your exact thoughts out loud or never speak again?",
+            "Would you rather... be able to fly or be invisible?",
+            "Would you rather... live 100 years in the past or 100 years in the future?",
+            "Would you rather... lose your phone or lose your wallet?",
+            "Would you rather... eat only pizza for a year or no pizza for 10 years?",
+            "Would you rather... be famous for something terrible or unknown for something amazing?"
+        ],
+        mostLikely: [
+            "Who is most likely to... accidentally start a fire while cooking?",
+            "Who is most likely to... survive a zombie apocalypse?",
+            "Who is most likely to... spend all their savings on something useless?",
+            "Who is most likely to... get arrested for something silly?",
+            "Who is most likely to... sleep through a major alarm?",
+            "Who is most likely to... become a millionaire secretly?"
+        ]
+    };
 
     function joinGame() {
         const realName = document.getElementById('realNameInput').value.trim();
@@ -93,7 +164,6 @@
         if (!realName || !codename) { alert('Fill in both fields!'); return; }
 
         myData = { realName, codename };
-        
         db.ref('players/' + myId).set(myData);
         db.ref('players/' + myId).onDisconnect().remove();
 
@@ -114,12 +184,12 @@
 
             for (let id in players) {
                 const li = document.createElement('li');
-                li.innerText = players[id].codename + (id === playerIds[0] ? ' (Host)' : '');
+                li.innerText = `${players[id].codename} ${id === playerIds[0] ? '(Host)' : ''}`;
                 list.appendChild(li);
             }
 
-            if (isFirst && playerIds.length >= 1) {
-                document.getElementById('startBtn').classList.remove('hidden');
+            if (isFirst) {
+                document.getElementById('hostControls').classList.remove('hidden');
             }
         });
 
@@ -132,101 +202,91 @@
             if (state.gameOver) {
                 document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('reveal-screen').classList.remove('hidden');
-                renderRecap(state.roundHistory);
+                renderLeaderboardAndRecap(state);
                 return;
             }
 
             document.getElementById('game-screen').classList.remove('hidden');
             document.getElementById('roundIndicator').innerText = `Round ${state.currentRound} of ${state.totalRounds}`;
 
-            if (myId === state.speakerId) {
-                document.getElementById('gameTitle').innerText = "Your Turn to Speak!";
-                document.getElementById('speakerSection').classList.remove('hidden');
-                document.getElementById('listenerSection').classList.add('hidden');
-                setupRecorder();
-            } else {
-                document.getElementById('gameTitle').innerText = "Listen & Guess!";
-                document.getElementById('speakerSection').classList.add('hidden');
-                document.getElementById('listenerSection').classList.remove('hidden');
-                loadGuessOptions();
-            }
+            const speakerId = state.speakerId;
+            const hasSubmitted = state.currentResponse !== null && state.currentResponse !== undefined;
 
-            if (state.audioData) {
-                const playerAudio = document.getElementById('audioPlayback');
-                playerAudio.src = state.audioData;
-                playerAudio.playbackRate = 0.8; 
+            // Reset UI Visibility
+            document.getElementById('speakerSection').classList.add('hidden');
+            document.getElementById('waitingForSpeakerSection').classList.add('hidden');
+            document.getElementById('listenerSection').classList.add('hidden');
+            document.getElementById('waitingForGuessesSection').classList.add('hidden');
+
+            if (myId === speakerId) {
+                document.getElementById('gameTitle').innerText = "Your Turn to Answer!";
+                if (!hasSubmitted) {
+                    document.getElementById('speakerSection').classList.remove('hidden');
+                    document.getElementById('speakerPrompt').innerText = state.currentPrompt;
+                } else {
+                    document.getElementById('waitingForGuessesSection').classList.remove('hidden');
+                }
+            } else {
+                document.getElementById('gameTitle').innerText = "Read & Guess!";
+                if (!hasSubmitted) {
+                    document.getElementById('waitingForSpeakerSection').classList.remove('hidden');
+                    document.getElementById('currentSpeakerCodename').innerText = state.speakerCodename;
+                } else {
+                    // Check if current user already submitted a guess
+                    const myGuess = state.currentGuesses && state.currentGuesses[myId];
+                    if (myGuess) {
+                        document.getElementById('waitingForGuessesSection').classList.remove('hidden');
+                    } else {
+                        document.getElementById('listenerSection').classList.remove('hidden');
+                        document.getElementById('listenerPrompt').innerText = state.currentPrompt;
+                        document.getElementById('listenerResponse').innerText = `"${state.currentResponse}"`;
+                        loadGuessOptions();
+                    }
+                }
             }
         });
     }
 
     async function startGameSession() {
+        const mode = document.getElementById('gameModeSelect').value;
+        const roundsPerPlayer = parseInt(document.getElementById('roundsSelect').value);
+        
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
         const ids = Object.keys(players);
 
+        // Build Round Schedule
+        let schedule = [];
+        const pack = QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen;
+        
+        for (let r = 0; r < roundsPerPlayer; r++) {
+            const prompt = pack[r % pack.length];
+            for (let id of ids) {
+                schedule.push({ speakerId: id, prompt: prompt });
+            }
+        }
+
         db.ref('gameState').set({
             hostId: myId,
-            playerOrder: ids,
+            schedule: schedule,
             currentRound: 1,
-            totalRounds: ids.length,
-            speakerId: ids[0],
-            speakerCodename: players[ids[0]].codename,
-            speakerRealName: players[ids[0]].realName,
-            audioData: null,
-            roundHistory: [],
+            totalRounds: schedule.length,
+            speakerId: schedule[0].speakerId,
+            speakerCodename: players[schedule[0].speakerId].codename,
+            speakerRealName: players[schedule[0].speakerId].realName,
+            currentPrompt: schedule[0].prompt,
+            currentResponse: null,
+            currentGuesses: {},
+            history: [],
             gameOver: false
         });
     }
 
-    async function setupRecorder() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-            const source = audioCtx.createMediaStreamSource(stream);
-
-            // Deep Voice Filter (Low-pass filter removes high pitch/glitches for a clean deep tone)
-            const lowPass = audioCtx.createBiquadFilter();
-            lowPass.type = "lowpass";
-            lowPass.frequency.value = 800; // Deep monster tone filter
-
-            const destination = audioCtx.createMediaStreamDestination();
-            source.connect(lowPass);
-            lowPass.connect(destination);
-
-            mediaRecorder = new MediaRecorder(destination.stream);
-            audioChunks = [];
-            
-            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-            mediaRecorder.onstop = () => {
-                const blob = new Blob(audioChunks, { type: "audio/webm" });
-                const reader = new FileReader();
-                reader.readAsDataURL(blob);
-                reader.onloadend = () => {
-                    // Instantly sync audio to gameState so all listeners receive it
-                    db.ref('gameState/audioData').set(reader.result);
-                    document.getElementById('recStatus').innerText = "Deep voice recorded & uploaded!";
-                };
-            };
-        } catch (err) { alert("Microphone access is required!"); }
-    }
-
-    function toggleRecording() {
-        const btn = document.getElementById('recBtn');
-        if (!isRecording) {
-            audioChunks = [];
-            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
-            mediaRecorder.start();
-            isRecording = true;
-            btn.innerText = "⏹ Stop Recording";
-            btn.classList.add('danger');
-            document.getElementById('recStatus').innerText = "Recording...";
-        } else {
-            mediaRecorder.stop();
-            isRecording = false;
-            btn.classList.add('hidden');
-        }
+    function submitResponse() {
+        const text = document.getElementById('speakerResponseInput').value.trim();
+        if (!text) { alert("Please type an answer first!"); return; }
+        document.getElementById('speakerResponseInput').value = "";
+        db.ref('gameState/currentResponse').set(text);
     }
 
     function loadGuessOptions() {
@@ -237,8 +297,8 @@
             for (let id in players) {
                 if (id !== myId) {
                     const opt = document.createElement('option');
-                    opt.value = players[id].codename;
-                    opt.innerText = players[id].codename;
+                    opt.value = players[id].realName; // Guess using REAL NAME
+                    opt.innerText = players[id].realName;
                     select.appendChild(opt);
                 }
             }
@@ -246,70 +306,127 @@
     }
 
     async function submitGuess() {
-        const guess = document.getElementById('guessSelect').value;
+        const guessRealName = document.getElementById('guessSelect').value;
         const stateSnap = await db.ref('gameState').once('value');
         const state = stateSnap.val();
+        const pSnap = await db.ref('players').once('value');
+        const players = pSnap.val();
 
-        if (!state.audioData) {
-            alert("Please record and upload your voice before submitting!");
-            return;
+        // Save guess
+        await db.ref(`gameState/currentGuesses/${myId}`).set({
+            guesserRealName: players[myId].realName,
+            guessedRealName: guessRealName
+        });
+
+        // Check if all listeners have guessed
+        const updatedStateSnap = await db.ref('gameState').once('value');
+        const updatedState = updatedStateSnap.val();
+        const numGuesses = Object.keys(updatedState.currentGuesses || {}).length;
+        const totalPlayers = Object.keys(players).length;
+
+        // If everyone except the speaker has submitted a guess, advance the round!
+        if (numGuesses >= totalPlayers - 1) {
+            advanceRound(updatedState, players);
         }
+    }
 
-        // Save this round's info to history
-        let history = state.roundHistory || [];
+    async function advanceRound(state, players) {
+        let history = state.history || [];
+        
+        // Push round details to permanent history
         history.push({
             round: state.currentRound,
+            prompt: state.currentPrompt,
+            response: state.currentResponse,
             speakerCodename: state.speakerCodename,
             speakerRealName: state.speakerRealName,
-            audio: state.audioData,
-            guess: guess
+            guesses: state.currentGuesses || {}
         });
 
         let nextRoundNum = state.currentRound + 1;
 
         if (nextRoundNum <= state.totalRounds) {
-            let nextSpeakerId = state.playerOrder[nextRoundNum - 1];
-            const pSnap = await db.ref('players').once('value');
-            const players = pSnap.val();
-
+            const nextItem = state.schedule[nextRoundNum - 1];
             db.ref('gameState').update({
                 currentRound: nextRoundNum,
-                speakerId: nextSpeakerId,
-                speakerCodename: players[nextSpeakerId].codename,
-                speakerRealName: players[nextSpeakerId].realName,
-                audioData: null,
-                roundHistory: history
+                speakerId: nextItem.speakerId,
+                speakerCodename: players[nextItem.speakerId].codename,
+                speakerRealName: players[nextItem.speakerId].realName,
+                currentPrompt: nextItem.prompt,
+                currentResponse: null,
+                currentGuesses: {},
+                history: history
             });
         } else {
-            // Game Over -> Show full recap
+            // End of Game
             db.ref('gameState').update({
                 gameOver: true,
-                roundHistory: history
+                history: history
             });
         }
     }
 
-    function renderRecap(history) {
-        const container = document.getElementById('recapContainer');
-        container.innerHTML = '';
+    function renderLeaderboardAndRecap(state) {
+        const history = state.history || [];
+        const scores = {};
 
-        if (!history) return;
+        // Calculate Scores (+1 point for each correct guess)
+        history.forEach(h => {
+            const correctRealName = h.speakerRealName;
+            for (let gId in h.guesses) {
+                const g = h.guesses[gId];
+                if (!scores[g.guesserRealName]) scores[g.guesserRealName] = 0;
+                if (g.guessedRealName === correctRealName) {
+                    scores[g.guesserRealName] += 1;
+                }
+            }
+        });
 
-        history.forEach((h, index) => {
+        // Render Leaderboard
+        const lbContainer = document.getElementById('leaderboardContainer');
+        lbContainer.innerHTML = '';
+        
+        const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
+        if (sortedScores.length === 0) {
+            lbContainer.innerHTML = "<p>No guesses were recorded.</p>";
+        } else {
+            sortedScores.forEach((name, rank) => {
+                const div = document.createElement('div');
+                div.style.background = "#334155";
+                div.style.padding = "12px";
+                div.style.marginBottom = "8px";
+                div.style.borderRadius = "6px";
+                div.innerHTML = `<b>#${rank + 1} ${name}</b> <span class="score-badge">${scores[name]} pts</span>`;
+                lbContainer.appendChild(div);
+            });
+        }
+
+        // Render Full Game Recap
+        const recapContainer = document.getElementById('recapContainer');
+        recapContainer.innerHTML = '';
+
+        history.forEach((h, idx) => {
             const div = document.createElement('div');
             div.style.background = "#334155";
             div.style.padding = "15px";
-            div.style.marginBottom = "15px";
+            div.style.marginBottom = "12px";
             div.style.borderRadius = "8px";
-            
+
+            let guessesListHTML = "";
+            for (let gId in h.guesses) {
+                const g = h.guesses[gId];
+                const isCorrect = g.guessedRealName === h.speakerRealName;
+                guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}`;
+            }
+
             div.innerHTML = `
-                <p><b>Round ${index + 1}</b></p>
-                <p>Speaker Codename: <span style="color:#38bdf8;">${h.speakerCodename}</span></p>
-                <p>Real Name: <b style="color:#4ade80;">${h.speakerRealName}</b></p>
-                <p>Your Guess: <i>${h.guess}</i></p>
-                <audio controls src="${h.audio}" style="width:100%; margin: 10px 0;" onplay="this.playbackRate=0.8;"></audio>
+                <p style="color:#38bdf8; font-weight:bold; margin-0;">Round ${idx + 1}</p>
+                <p><b>Prompt:</b> ${h.prompt}</p>
+                <p><b>Secret Answer:</b> "${h.response}"</p>
+                <p><b>Real Author:</b> <span style="color:#4ade80; font-weight:bold;">${h.speakerRealName}</span> (Codename: ${h.speakerCodename})</p>
+                <p style="font-size:14px; margin-bottom:0;"><b>Guesses:</b>${guessesListHTML || " None"}</p>
             `;
-            container.appendChild(div);
+            recapContainer.appendChild(div);
         });
     }
 </script>

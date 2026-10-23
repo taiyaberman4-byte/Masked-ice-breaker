@@ -12,7 +12,7 @@
         .card { background: #1e293b; max-width: 550px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         input, select, textarea, button { width: 100%; padding: 12px; margin-top: 12px; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; }
         input, textarea, select { background: #334155; color: white; }
-        textarea { resize: vertical; min-height: 80px; }
+        textarea { resize: vertical; min-height: 90px; }
         button { background: #6366f1; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background: #4f46e5; }
         .hidden { display: none !important; }
@@ -25,6 +25,7 @@
         .rules-box h3 { margin-top: 0; color: #38bdf8; font-size: 16px; }
         .rules-box ul { padding-left: 15px; list-style: disc; }
         .rules-box li { background: none; padding: 2px 0; margin-top: 4px; }
+        .sub-text { font-size: 13px; color: #94a3b8; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -59,7 +60,8 @@
                 <p><b>Host Game Setup:</b></p>
                 <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Select Game Pack:</label>
                 <select id="gameModeSelect">
-                    <option value="hesATen">He/She is a 10, but...</option>
+                    <option value="hesATen">He/She is a 10, but... (Teen Couples & Drama)</option>
+                    <option value="twoTruthsOneLie">Two Truths & A Lie</option>
                     <option value="wouldYouRather">Would You Rather...</option>
                     <option value="mostLikely">Most Likely To...</option>
                 </select>
@@ -67,8 +69,8 @@
                 <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Rounds Per Player:</label>
                 <select id="roundsSelect">
                     <option value="1">1 Round Each</option>
-                    <option value="3">3 Rounds Each</option>
-                    <option value="5" selected>5 Rounds Each</option>
+                    <option value="3" selected>3 Rounds Each</option>
+                    <option value="5">5 Rounds Each</option>
                 </select>
 
                 <button onclick="startGameSession()">Start Game 🚀</button>
@@ -82,7 +84,8 @@
             <!-- Speaker Section -->
             <div id="speakerSection" class="hidden">
                 <div class="prompt-box" id="speakerPrompt"></div>
-                <textarea id="speakerResponseInput" placeholder="Type your response or rating here..."></textarea>
+                <textarea id="speakerResponseInput" placeholder="Type your answer here... (Optional: explain why!)"></textarea>
+                <p class="sub-text">(Optional: feel free to explain your reasoning in your answer!)</p>
                 <button onclick="submitResponse()">Submit Secret Answer</button>
             </div>
 
@@ -133,44 +136,45 @@
     let myId = 'user_' + Math.random().toString(36).substring(2, 9);
     let myData = {};
 
-    // --- QUESTION PACKS (150+ Questions combined) ---
+    // --- EXPANDED QUESTION PACKS ---
     const QUESTION_PACKS = {
         hesATen: [
-            "He/She is a 10, but... needs your location 24/7 and texts non-stop.",
-            "He/She is a 10, but... always brings up old things in arguments.",
-            "He/She is a 10, but... never takes it upon themselves to make plans to go out and always relies on you.",
-            "He/She is a 10, but... still talks to their ex's family every day.",
-            "He/She is a 10, but... chews food with their mouth wide open.",
-            "He/She is a 10, but... refuses to tip at any restaurant.",
-            "He/She is a 10, but... wears socks with sandals everywhere.",
-            "He/She is a 10, but... thinks the Earth is flat.",
-            "He/She is a 10, but... claps when the airplane lands.",
-            "He/She is a 10, but... puts ketchup on expensive steak.",
-            "He/She is a 10, but... leaves their dishes in the sink for 2 weeks.",
-            "He/She is a 10, but... talks in a baby voice when they want something.",
-            "He/She is a 10, but... doesn't wash their hands after using the bathroom.",
-            "He/She is a 10, but... asks for a sip of your drink and drinks half of it.",
-            "He/She is a 10, but... gets angry whenever they lose a board game.",
-            "He/She is a 10, but... calls their parents during your dates.",
-            "He/She is a 10, but... wears sunglasses indoors at night."
+            "He/She is a 10, but... causes a huge scene over small things when you're out in public.",
+            "He/She is a 10, but... sneaks out to see you and almost gets both of you grounded.",
+            "He/She is a 10, but... posts passive-aggressive quotes on their story right after any tiny disagreement.",
+            "He/She is a 10, but... gets inappropriate PDA-heavy when all your friends are around.",
+            "He/She is a 10, but... always brings up old drama from months ago in every argument.",
+            "He/She is a 10, but... expects you to plan every date and never makes an effort on their own.",
+            "He/She is a 10, but... needs your live location 24/7 and gets anxious if you don't text back instantly.",
+            "He/She is a 10, but... flirts with everyone 'just to test if you get jealous.'",
+            "He/She is a 10, but... gets you both kicked out or banned from places for doing stupid dares.",
+            "He/She is a 10, but... refuses to hold hands in public unless it's for an Instagram photo.",
+            "He/She is a 10, but... still hangs out with their ex because 'they're just best friends now.'",
+            "He/She is a 10, but... gets super competitive and mad over casual video games or board games.",
+            "He/She is a 10, but... takes forever to reply to messages when they are actively online.",
+            "He/She is a 10, but... acts totally different around their friends compared to when it's just you two.",
+            "He/She is a 10, but... borrows your clothes/hoodies and never gives them back."
+        ],
+        twoTruthsOneLie: [
+            "Share 2 TRUE facts and 1 LIE about your past teenage relationships or dating history! (Optional: explain why!)",
+            "Share 2 TRUE rebellious things you've done in school and 1 LIE! (Optional: explain why!)",
+            "Share 2 TRUE secrets you've kept from your parents and 1 LIE! (Optional: explain why!)",
+            "Share 2 TRUE embarrassing moments in public and 1 LIE! (Optional: explain why!)",
+            "Share 2 TRUE hidden talents/skills you have and 1 LIE! (Optional: explain why!)"
         ],
         wouldYouRather: [
-            "Would you rather... accidentally send an embarrassing text to your boss or your ex?",
-            "Would you rather... give up social media forever or never watch movies again?",
-            "Would you rather... always have to speak your exact thoughts out loud or never speak again?",
-            "Would you rather... be able to fly or be invisible?",
-            "Would you rather... live 100 years in the past or 100 years in the future?",
-            "Would you rather... lose your phone or lose your wallet?",
-            "Would you rather... eat only pizza for a year or no pizza for 10 years?",
-            "Would you rather... be famous for something terrible or unknown for something amazing?"
+            "Would you rather... accidentally send a risky text to your crush's parents or your teacher?",
+            "Would you rather... get caught sneaking out or get caught lying about who you were with?",
+            "Would you rather... have your entire search history read out loud to the group or your private DMs?",
+            "Would you rather... always have to double-date with your parents or never be allowed on dates?",
+            "Would you rather... accidentally ruin your friend's birthday party or your own date night?"
         ],
         mostLikely: [
-            "Who is most likely to... accidentally start a fire while cooking?",
-            "Who is most likely to... survive a zombie apocalypse?",
-            "Who is most likely to... spend all their savings on something useless?",
-            "Who is most likely to... get arrested for something silly?",
-            "Who is most likely to... sleep through a major alarm?",
-            "Who is most likely to... become a millionaire secretly?"
+            "Who is most likely to... start an argument in public and walk away dramatically?",
+            "Who is most likely to... sneak out of the house for a late-night drive or party?",
+            "Who is most likely to... get caught doing something rebellious at school?",
+            "Who is most likely to... text an ex at 2 AM?",
+            "Who is most likely to... get banned from a local mall or venue?"
         ]
     };
 
@@ -264,7 +268,7 @@
         });
     }
 
-    // Fisher-Yates Shuffle Helper Function
+    // Fisher-Yates Shuffle
     function shuffleArray(array) {
         let arr = [...array];
         for (let i = arr.length - 1; i > 0; i--) {
@@ -282,16 +286,20 @@
         const players = pSnap.val();
         const ids = Object.keys(players);
 
-        // Build Round Schedule with completely randomized questions for every player's turn
+        // Get and shuffle questions pool
+        let pack = shuffleArray(QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen);
+        let questionIndex = 0;
+
         let schedule = [];
-        const pack = QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen;
-        
+
+        // Build schedule guaranteeing every player gets EXACTLY roundsPerPlayer turns
         for (let r = 0; r < roundsPerPlayer; r++) {
-            const shuffledIds = shuffleArray(ids);
-            for (let id of shuffledIds) {
-                // Pick a random question for every single individual player's turn
-                const randomPrompt = pack[Math.floor(Math.random() * pack.length)];
-                schedule.push({ speakerId: id, prompt: randomPrompt });
+            const shuffledPlayerTurnOrder = shuffleArray(ids);
+            for (let id of shuffledPlayerTurnOrder) {
+                // Ensure unique non-repeating questions
+                const prompt = pack[questionIndex % pack.length];
+                questionIndex++;
+                schedule.push({ speakerId: id, prompt: prompt });
             }
         }
 
@@ -312,7 +320,6 @@
     }
 
     function resetGameSession() {
-        // Wipes out old game state completely from Firebase so it starts fresh
         db.ref('gameState').remove();
         location.reload();
     }

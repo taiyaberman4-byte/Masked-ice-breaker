@@ -23,6 +23,7 @@
 <body>
     <div class="card">
         <h1>🎭 Masked Voice Game</h1>
+        <p id="roundIndicator" style="color: #38bdf8; font-weight: bold;"></p>
         
         <!-- Login Screen -->
         <div id="login-screen">
@@ -36,19 +37,19 @@
         <div id="lobby-screen" class="hidden">
             <h2>Waiting Room</h2>
             <ul id="playerList"></ul>
-            <button id="startBtn" class="hidden" onclick="startRound()">Start Game Round</button>
+            <button id="startBtn" class="hidden" onclick="startGameSession()">Start Multi-Round Game</button>
         </div>
 
         <!-- Game Play Screen -->
         <div id="game-screen" class="hidden">
             <h2 id="gameTitle">Game in Progress</h2>
             <div id="speakerSection" class="hidden">
-                <p>You are the speaker! Record your heavily disguised message:</p>
+                <p>You are the speaker this round! Record your high-pitched alien message:</p>
                 <button id="recBtn" onclick="toggleRecording()">🔴 Start Recording</button>
                 <p id="recStatus"></p>
             </div>
             <div id="listenerSection" class="hidden">
-                <p>Listen to the anonymous voice:</p>
+                <p>Listen to the masked alien voice:</p>
                 <audio id="audioPlayback" controls style="width:100%; margin-top:15px;"></audio>
                 <p>Who spoke this?</p>
                 <select id="guessSelect"></select>
@@ -58,9 +59,10 @@
 
         <!-- Reveal Screen -->
         <div id="reveal-screen" class="hidden">
-            <h2>🎉 Grand Reveal!</h2>
+            <h2>🎉 Round Reveal!</h2>
             <p id="revealText" style="font-size: 18px; margin: 20px 0;"></p>
-            <button onclick="location.reload()">Play Again</button>
+            <button id="nextRoundBtn" class="hidden" onclick="nextRound()">Next Round ➡️</button>
+            <button id="restartGameBtn" class="hidden" onclick="location.reload()">Play Entire Game Again</button>
         </div>
     </div>
 
@@ -83,7 +85,7 @@
     let mediaRecorder;
     let audioChunks = [];
     let isRecording = false;
-    let audioCtx, modulator;
+    let audioCtx;
 
     function joinGame() {
         const realName = document.getElementById('realNameInput').value.trim();
@@ -127,13 +129,16 @@
 
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('roundIndicator').innerText = `Round ${state.currentRound} of ${state.totalRounds}`;
 
             if (myId === state.speakerId) {
                 document.getElementById('gameTitle').innerText = "Your Turn to Speak!";
                 document.getElementById('speakerSection').classList.remove('hidden');
+                document.getElementById('listenerSection').classList.add('hidden');
                 setupRecorder();
             } else {
                 document.getElementById('gameTitle').innerText = "Listen & Guess!";
+                document.getElementById('speakerSection').classList.add('hidden');
                 document.getElementById('listenerSection').classList.remove('hidden');
                 loadGuessOptions();
             }
@@ -149,23 +154,54 @@
                     The speaker was <b>${state.speakerCodename}</b>!<br>
                     Real name: <span style="color:#38bdf8;"><b>${state.speakerRealName}</b></span>
                 `;
+
+                if (myId === state.hostId) {
+                    if (state.currentRound < state.totalRounds) {
+                        document.getElementById('nextRoundBtn').classList.remove('hidden');
+                    } else {
+                        document.getElementById('restartGameBtn').classList.remove('hidden');
+                        document.getElementById('revealText').innerHTML += `<br><br><b>Game Over! All rounds complete!</b>`;
+                    }
+                }
             }
         });
     }
 
-    function startRound() {
-        db.ref('players').once('value', snapshot => {
-            const players = snapshot.val();
-            const ids = Object.keys(players);
-            const randomSpeakerId = ids[Math.floor(Math.random() * ids.length)];
+    async function startGameSession() {
+        const pSnap = await db.ref('players').once('value');
+        const players = pSnap.val();
+        const ids = Object.keys(players);
 
-            db.ref('gameState').set({
-                speakerId: randomSpeakerId,
-                speakerCodename: players[randomSpeakerId].codename,
-                speakerRealName: players[randomSpeakerId].realName,
-                audioData: null,
-                reveal: false
-            });
+        db.ref('gameState').set({
+            hostId: myId,
+            playerOrder: ids,
+            currentRound: 1,
+            totalRounds: ids.length,
+            speakerId: ids[0],
+            speakerCodename: players[ids[0]].codename,
+            speakerRealName: players[ids[0]].realName,
+            audioData: null,
+            reveal: false
+        });
+    }
+
+    async function nextRound() {
+        const stateSnap = await db.ref('gameState').once('value');
+        const state = stateSnap.val();
+        const pSnap = await db.ref('players').once('value');
+        const players = pSnap.val();
+
+        let nextRoundNum = state.currentRound + 1;
+        let nextSpeakerIndex = nextRoundNum - 1;
+        let nextSpeakerId = state.playerOrder[nextSpeakerIndex];
+
+        db.ref('gameState').update({
+            currentRound: nextRoundNum,
+            speakerId: nextSpeakerId,
+            speakerCodename: players[nextSpeakerId].codename,
+            speakerRealName: players[nextSpeakerId].realName,
+            audioData: null,
+            reveal: false
         });
     }
 
@@ -177,27 +213,18 @@
 
             const source = audioCtx.createMediaStreamSource(stream);
 
-            const distortion = audioCtx.createWaveShaper();
-            distortion.curve = makeDistortionCurve(300);
-
-            modulator = audioCtx.createOscillator();
-            modulator.type = "sawtooth";
-            modulator.frequency.value = 40;
-            const ringModGain = audioCtx.createGain();
-            modulator.connect(ringModGain.gain);
-            modulator.start();
-
+            // Clean High-Pitch Alien Shift (Bypasses glitchy distortion, keeps voice clear)
             const biquadFilter = audioCtx.createBiquadFilter();
-            biquadFilter.type = "lowpass";
-            biquadFilter.frequency.value = 800;
+            biquadFilter.type = "highpass";
+            biquadFilter.frequency.value = 300; // Removes deep rumble, gives an clean high tone
 
             const destination = audioCtx.createMediaStreamDestination();
-            source.connect(distortion);
-            distortion.connect(ringModGain);
-            ringModGain.connect(biquadFilter);
+            source.connect(biquadFilter);
             biquadFilter.connect(destination);
 
             mediaRecorder = new MediaRecorder(destination.stream);
+            audioChunks = [];
+            
             mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
             mediaRecorder.onstop = () => {
                 const blob = new Blob(audioChunks, { type: "audio/webm" });
@@ -205,22 +232,10 @@
                 reader.readAsDataURL(blob);
                 reader.onloadend = () => {
                     db.ref('gameState/audioData').set(reader.result);
-                    document.getElementById('recStatus').innerText = "Masked audio uploaded successfully!";
+                    document.getElementById('recStatus').innerText = "Alien voice uploaded successfully!";
                 };
             };
         } catch (err) { alert("Microphone access is required!"); }
-    }
-
-    function makeDistortionCurve(amount) {
-        const k = typeof amount === "number" ? amount : 50;
-        const n_samples = 44100;
-        const curve = new Float32Array(n_samples);
-        const deg = Math.PI / 180;
-        for (let i = 0; i < n_samples; ++i) {
-            const x = (i * 2) / n_samples - 1;
-            curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
-        }
-        return curve;
     }
 
     function toggleRecording() {
@@ -237,7 +252,6 @@
             mediaRecorder.stop();
             isRecording = false;
             btn.classList.add('hidden');
-            if (modulator) try { modulator.stop(); } catch(e) {}
         }
     }
 
@@ -250,7 +264,7 @@
                 if (id !== myId) {
                     const opt = document.createElement('option');
                     opt.value = players[id].codename;
-                    opt.innerText = players[id].codename;
+                    opt.innerText = players[id] .codename;
                     select.appendChild(opt);
                 }
             }

@@ -213,14 +213,33 @@
 
             const source = audioCtx.createMediaStreamSource(stream);
 
-            // Clean High-Pitch Alien Shift (Bypasses glitchy distortion, keeps voice clear)
-            const biquadFilter = audioCtx.createBiquadFilter();
-            biquadFilter.type = "highpass";
-            biquadFilter.frequency.value = 300; // Removes deep rumble, gives an clean high tone
+            // Alien Voice Processor Pipeline
+            const highPass = audioCtx.createBiquadFilter();
+            highPass.type = "highpass";
+            highPass.frequency.value = 600; // Cuts deep bass/rumble
+
+            const bandPass = audioCtx.createBiquadFilter();
+            bandPass.type = "bandpass";
+            bandPass.frequency.value = 2200; // Highlights speech intelligibility range
+            bandPass.Q.value = 2;
+
+            // Frequency modulator to give it an electronic sci-fi ring
+            const modulator = audioCtx.createOscillator();
+            modulator.type = 'sine';
+            modulator.frequency.value = 40; 
+
+            const modGain = audioCtx.createGain();
+            modGain.gain.value = 150;
+
+            modulator.connect(modGain);
+            modGain.connect(bandPass.frequency);
+            modulator.start();
 
             const destination = audioCtx.createMediaStreamDestination();
-            source.connect(biquadFilter);
-            biquadFilter.connect(destination);
+            
+            source.connect(highPass);
+            highPass.connect(bandPass);
+            bandPass.connect(destination);
 
             mediaRecorder = new MediaRecorder(destination.stream);
             audioChunks = [];
@@ -264,7 +283,7 @@
                 if (id !== myId) {
                     const opt = document.createElement('option');
                     opt.value = players[id].codename;
-                    opt.innerText = players[id] .codename;
+                    opt.innerText = players[id].codename;
                     select.appendChild(opt);
                 }
             }

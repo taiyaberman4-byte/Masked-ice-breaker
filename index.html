@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masked Party Icebreaker Game</title>
+    <title>Masked Icebreaker Game</title>
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
@@ -21,6 +21,10 @@
         .prompt-box { background: #0284c7; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin: 15px 0; }
         .response-box { background: #475569; padding: 15px; border-radius: 8px; font-style: italic; margin: 15px 0; word-break: break-word; }
         .score-badge { background: #22c55e; color: black; padding: 4px 10px; border-radius: 12px; font-weight: bold; float: right; }
+        .rules-box { background: #334155; padding: 15px; border-radius: 8px; text-align: left; font-size: 14px; margin-bottom: 20px; color: #cbd5e1; }
+        .rules-box h3 { margin-top: 0; color: #38bdf8; font-size: 16px; }
+        .rules-box ul { padding-left: 15px; list-style: disc; }
+        .rules-box li { background: none; padding: 2px 0; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -30,6 +34,16 @@
         
         <!-- Login Screen -->
         <div id="login-screen">
+            <div class="rules-box">
+                <h3>📖 How to Play</h3>
+                <ul>
+                    <li><b>Enter Details:</b> Type your real name (kept secret until the end) and a secret Codename.</li>
+                    <li><b>The Game:</b> Each round, a prompt is given. One player answers secretly under their codename.</li>
+                    <li><b>Guessing:</b> Everyone else reads the response and guesses which <i>real person</i> wrote it.</li>
+                    <li><b>Scoring:</b> Earn +1 point for every correct guess. No reveals happen until the final leaderboard!</li>
+                </ul>
+            </div>
+
             <p>Enter your details to join:</p>
             <input type="text" id="realNameInput" placeholder="Your Real Name (Hidden until the end)">
             <input type="text" id="codenameInput" placeholder="Secret Codename (e.g. Ghost)">
@@ -128,7 +142,7 @@
             "He/She is a 10, but... refuses to tip at any restaurant.",
             "He/She is a 10, but... wears socks with sandals everywhere.",
             "He/She is a 10, but... thinks the Earth is flat.",
-            "He/She is a 10, but... clap when the airplane lands.",
+            "He/She is a 10, but... claps when the airplane lands.",
             "He/She is a 10, but... puts ketchup on expensive steak.",
             "He/She is a 10, but... leaves their dishes in the sink for 2 weeks.",
             "He/She is a 10, but... talks in a baby voice when they want something.",
@@ -180,16 +194,21 @@
             list.innerHTML = '';
             
             const playerIds = Object.keys(players);
-            let isFirst = playerIds[0] === myId;
+            
+            // Lock the host permanently to the first player who joined
+            const permanentHostId = playerIds[0];
+            let isHost = permanentHostId === myId;
 
             for (let id in players) {
                 const li = document.createElement('li');
-                li.innerText = `${players[id].codename} ${id === playerIds[0] ? '(Host)' : ''}`;
+                li.innerText = `${players[id].codename} ${id === permanentHostId ? '(Host)' : ''}`;
                 list.appendChild(li);
             }
 
-            if (isFirst) {
+            if (isHost) {
                 document.getElementById('hostControls').classList.remove('hidden');
+            } else {
+                document.getElementById('hostControls').classList.add('hidden');
             }
         });
 

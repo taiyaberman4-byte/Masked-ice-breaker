@@ -26,6 +26,8 @@
         .rules-box ul { padding-left: 15px; list-style: disc; }
         .rules-box li { background: none; padding: 2px 0; margin-top: 4px; }
         .sub-text { font-size: 13px; color: #94a3b8; margin-top: 4px; }
+        .timer-badge { font-size: 20px; font-weight: bold; color: #f43f5e; background: #881337; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+        .skip-box { background: #ef4444; color: white; padding: 20px; border-radius: 8px; font-weight: bold; font-size: 18px; margin: 20px 0; }
     </style>
 </head>
 <body>
@@ -73,6 +75,14 @@
                     <option value="5">5 Rounds Each</option>
                 </select>
 
+                <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Turn Timer:</label>
+                <select id="timerSelect">
+                    <option value="0">No Timer (Off)</option>
+                    <option value="30">30 Seconds</option>
+                    <option value="60" selected>1 Minute</option>
+                    <option value="120">2 Minutes</option>
+                </select>
+
                 <button onclick="startGameSession()">Start Game 🚀</button>
             </div>
         </div>
@@ -81,8 +91,15 @@
         <div id="game-screen" class="hidden">
             <h2 id="gameTitle">Game in Progress</h2>
             
+            <!-- Skip Notification Screen -->
+            <div id="skipNoticeSection" class="hidden">
+                <div class="skip-box" id="skipNoticeText"></div>
+                <p class="sub-text">Moving to the next turn in <span id="skipCountdown">5</span>s...</p>
+            </div>
+
             <!-- Speaker Section -->
             <div id="speakerSection" class="hidden">
+                <div id="timerDisplay" class="timer-badge hidden">⏳ <span>--</span>s</div>
                 <div class="prompt-box" id="speakerPrompt"></div>
                 <textarea id="speakerResponseInput" placeholder="Type your answer here... (Optional: explain why!)"></textarea>
                 <p class="sub-text">(Optional: feel free to explain your reasoning in your answer!)</p>
@@ -91,6 +108,7 @@
 
             <!-- Waiting for Speaker Section -->
             <div id="waitingForSpeakerSection" class="hidden">
+                <div id="waitingTimerDisplay" class="timer-badge hidden">⏳ <span>--</span>s</div>
                 <p>Waiting for <b id="currentSpeakerCodename" style="color:#38bdf8;"></b> to write their response...</p>
             </div>
 
@@ -135,6 +153,7 @@
 
     let myId = 'user_' + Math.random().toString(36).substring(2, 9);
     let myData = {};
+    let localTimerInterval = null;
 
     // --- EXPANDED QUESTION PACKS ---
     const QUESTION_PACKS = {
@@ -223,6 +242,7 @@
             document.getElementById('lobby-screen').classList.add('hidden');
 
             if (state.gameOver) {
+                if (localTimerInterval) clearInterval(localTimerInterval);
                 document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('reveal-screen').classList.remove('hidden');
                 renderLeaderboardAndRecap(state);
@@ -232,13 +252,44 @@
             document.getElementById('game-screen').classList.remove('hidden');
             document.getElementById('roundIndicator').innerText = `Round ${state.currentRound} of ${state.totalRounds}`;
 
-            const speakerId = state.speakerId;
-            const hasSubmitted = state.currentResponse !== null && state.currentResponse !== undefined;
-
+            // Reset UI sections
+            document.getElementById('skipNoticeSection').classList.add('hidden');
             document.getElementById('speakerSection').classList.add('hidden');
             document.getElementById('waitingForSpeakerSection').classList.add('hidden');
             document.getElementById('listenerSection').classList.add('hidden');
             document.getElementById('waitingForGuessesSection').classList.add('hidden');
+
+            // Handle skipped state banner
+            if (state.isSkipped) {
+                if (localTimerInterval) clearInterval(localTimerInterval);
+                document.getElementById('gameTitle').innerText = "Turn Skipped!";
+                document.getElementById('skipNoticeSection').classList.remove('hidden');
+                document.getElementById('skipNoticeText').innerText = `⏱️ ${state.speakerCodename} ran out of time and skipped their turn!`;
+                
+                // Show 5-second notice before advancing (Host handles state advance)
+                let timeLeft = 5;
+                document.getElementById('skipCountdown').innerText = timeLeft;
+                
+                if (myId === state.hostId) {
+                    setTimeout(async () => {
+                        const pSnap = await db.ref('players').once('value');
+                        advanceRound(state, pSnap.val(), true);
+                    }, 5000);
+                }
+                return;
+            }
+
+            const speakerId = state.speakerId;
+            const hasSubmitted = state.currentResponse !== null && state.currentResponse !== undefined;
+
+            // Timer display setup
+            if (state.turnTimerSec > 0 && !hasSubmitted && state.turnStartTime) {
+                startLocalTimer(state.turnStartTime, state.turnTimerSec, speakerId === myId, state);
+            } else {
+                if (localTimerInterval) clearInterval(localTimerInterval);
+                document.getElementById('timerDisplay').classList.add('hidden');
+                document.getElementById('waitingTimerDisplay').classList.add('hidden');
+            }
 
             if (myId === speakerId) {
                 document.getElementById('gameTitle').innerText = "Your Turn to Answer!";
@@ -268,6 +319,37 @@
         });
     }
 
+    function startLocalTimer(startTime, totalSec, isSpeaker, state) {
+        if (localTimerInterval) clearInterval(localTimerInterval);
+
+        const updateTimer = () => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = totalSec - elapsed;
+
+            if (remaining <= 0) {
+                clearInterval(localTimerInterval);
+                if (isSpeaker && !state.currentResponse) {
+                    // Time expired for active speaker -> trigger turn skip in Firebase
+                    db.ref('gameState').update({ isSkipped: true });
+                }
+                return;
+            }
+
+            if (isSpeaker) {
+                const el = document.getElementById('timerDisplay');
+                el.classList.remove('hidden');
+                el.querySelector('span').innerText = remaining;
+            } else {
+                const el = document.getElementById('waitingTimerDisplay');
+                el.classList.remove('hidden');
+                el.querySelector('span').innerText = remaining;
+            }
+        };
+
+        updateTimer();
+        localTimerInterval = setInterval(updateTimer, 1000);
+    }
+
     // Fisher-Yates Shuffle
     function shuffleArray(array) {
         let arr = [...array];
@@ -281,22 +363,20 @@
     async function startGameSession() {
         const mode = document.getElementById('gameModeSelect').value;
         const roundsPerPlayer = parseInt(document.getElementById('roundsSelect').value);
+        const turnTimerSec = parseInt(document.getElementById('timerSelect').value);
         
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
         const ids = Object.keys(players);
 
-        // Get and shuffle questions pool
         let pack = shuffleArray(QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen);
         let questionIndex = 0;
 
         let schedule = [];
 
-        // Build schedule guaranteeing every player gets EXACTLY roundsPerPlayer turns
         for (let r = 0; r < roundsPerPlayer; r++) {
             const shuffledPlayerTurnOrder = shuffleArray(ids);
             for (let id of shuffledPlayerTurnOrder) {
-                // Ensure unique non-repeating questions
                 const prompt = pack[questionIndex % pack.length];
                 questionIndex++;
                 schedule.push({ speakerId: id, prompt: prompt });
@@ -315,11 +395,15 @@
             currentResponse: null,
             currentGuesses: {},
             history: [],
+            turnTimerSec: turnTimerSec,
+            turnStartTime: Date.now(),
+            isSkipped: false,
             gameOver: false
         });
     }
 
     function resetGameSession() {
+        if (localTimerInterval) clearInterval(localTimerInterval);
         db.ref('gameState').remove();
         location.reload();
     }
@@ -365,20 +449,21 @@
         const totalPlayers = Object.keys(players).length;
 
         if (numGuesses >= totalPlayers - 1) {
-            advanceRound(updatedState, players);
+            advanceRound(updatedState, players, false);
         }
     }
 
-    async function advanceRound(state, players) {
+    async function advanceRound(state, players, wasSkipped = false) {
         let history = state.history || [];
         
         history.push({
             round: state.currentRound,
             prompt: state.currentPrompt,
-            response: state.currentResponse,
+            response: wasSkipped ? "[SKIPPED - Ran Out of Time]" : state.currentResponse,
             speakerCodename: state.speakerCodename,
             speakerRealName: state.speakerRealName,
-            guesses: state.currentGuesses || {}
+            guesses: wasSkipped ? {} : (state.currentGuesses || {}),
+            wasSkipped: wasSkipped
         });
 
         let nextRoundNum = state.currentRound + 1;
@@ -393,6 +478,8 @@
                 currentPrompt: nextItem.prompt,
                 currentResponse: null,
                 currentGuesses: {},
+                turnStartTime: Date.now(),
+                isSkipped: false,
                 history: history
             });
         } else {
@@ -423,7 +510,7 @@
         
         const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
         if (sortedScores.length === 0) {
-            lbContainer.innerHTML = "<p>No guesses were recorded.</p>";
+            lbContainer.innerHTML = "<p>No scores recorded.</p>";
         } else {
             sortedScores.forEach((name, rank) => {
                 const div = document.createElement('div');
@@ -447,10 +534,14 @@
             div.style.borderRadius = "8px";
 
             let guessesListHTML = "";
-            for (let gId in h.guesses) {
-                const g = h.guesses[gId];
-                const isCorrect = g.guessedRealName === h.speakerRealName;
-                guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}`;
+            if (h.wasSkipped) {
+                guessesListHTML = "<br>• <i>Skipped turn (no guesses made)</i>";
+            } else {
+                for (let gId in h.guesses) {
+                    const g = h.guesses[gId];
+                    const isCorrect = g.guessedRealName === h.speakerRealName;
+                    guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}`;
+                }
             }
 
             div.innerHTML = `

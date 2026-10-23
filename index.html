@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; margin: 0; padding: 20px; }
-        .card { background: #1e293b; max-width: 550px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .card { background: #1e293b; max-width: 550px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; }
         input, select, textarea, button { width: 100%; padding: 12px; margin-top: 12px; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; }
         input, textarea, select { background: #334155; color: white; }
         textarea { resize: vertical; min-height: 90px; }
@@ -28,10 +28,14 @@
         .sub-text { font-size: 13px; color: #94a3b8; margin-top: 4px; }
         .timer-badge { font-size: 20px; font-weight: bold; color: #f43f5e; background: #881337; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
         .skip-box { background: #ef4444; color: white; padding: 20px; border-radius: 8px; font-weight: bold; font-size: 18px; margin: 20px 0; }
+        .progress-badge { position: absolute; top: 15px; left: 15px; background: #38bdf8; color: #0f172a; font-weight: bold; padding: 6px 12px; border-radius: 20px; font-size: 13px; }
     </style>
 </head>
 <body>
     <div class="card">
+        <!-- Live Voting Counter (Top Left Corner) -->
+        <div id="voteProgressBadge" class="progress-badge hidden">📊 0/0 Guessed</div>
+
         <h1>🎭 Masked Icebreaker Game</h1>
         <p id="roundIndicator" style="color: #38bdf8; font-weight: bold;"></p>
         
@@ -117,8 +121,16 @@
                 <p>Read the anonymous response below:</p>
                 <div class="prompt-box" id="listenerPrompt"></div>
                 <div class="response-box" id="listenerResponse"></div>
+                
                 <p>Which real person wrote this?</p>
                 <select id="guessSelect"></select>
+
+                <!-- Two Truths & A Lie Guess Input (Shown only in Two Truths mode) -->
+                <div id="lieGuessContainer" class="hidden">
+                    <p style="margin-top:15px; margin-bottom:0;">What do you think the <b>LIE</b> is?</p>
+                    <input type="text" id="lieGuessInput" placeholder="Type what you think the lie is...">
+                </div>
+
                 <button onclick="submitGuess()">Submit Guess & Next</button>
             </div>
 
@@ -235,7 +247,7 @@
             }
         });
 
-        db.ref('gameState').on('value', snapshot => {
+        db.ref('gameState').on('value', async snapshot => {
             const state = snapshot.val();
             if (!state) return;
 
@@ -243,6 +255,7 @@
 
             if (state.gameOver) {
                 if (localTimerInterval) clearInterval(localTimerInterval);
+                document.getElementById('voteProgressBadge').classList.add('hidden');
                 document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('reveal-screen').classList.remove('hidden');
                 renderLeaderboardAndRecap(state);
@@ -258,6 +271,7 @@
             document.getElementById('waitingForSpeakerSection').classList.add('hidden');
             document.getElementById('listenerSection').classList.add('hidden');
             document.getElementById('waitingForGuessesSection').classList.add('hidden');
+            document.getElementById('voteProgressBadge').classList.add('hidden');
 
             // Handle skipped state banner
             if (state.isSkipped) {
@@ -266,7 +280,6 @@
                 document.getElementById('skipNoticeSection').classList.remove('hidden');
                 document.getElementById('skipNoticeText').innerText = `⏱️ ${state.speakerCodename} ran out of time and skipped their turn!`;
                 
-                // Show 5-second notice before advancing (Host handles state advance)
                 let timeLeft = 5;
                 document.getElementById('skipCountdown').innerText = timeLeft;
                 
@@ -291,6 +304,19 @@
                 document.getElementById('waitingTimerDisplay').classList.add('hidden');
             }
 
+            // Top-Left Voting Progress Counter (shown when speaker has submitted response)
+            if (hasSubmitted) {
+                const pSnap = await db.ref('players').once('value');
+                const players = pSnap.val() || {};
+                const totalPlayers = Object.keys(players).length;
+                const totalVoters = Math.max(1, totalPlayers - 1);
+                const currentVotes = Object.keys(state.currentGuesses || {}).length;
+
+                const badge = document.getElementById('voteProgressBadge');
+                badge.classList.remove('hidden');
+                badge.innerText = `📊 ${currentVotes}/${totalVoters} Guessed`;
+            }
+
             if (myId === speakerId) {
                 document.getElementById('gameTitle').innerText = "Your Turn to Answer!";
                 if (!hasSubmitted) {
@@ -312,6 +338,14 @@
                         document.getElementById('listenerSection').classList.remove('hidden');
                         document.getElementById('listenerPrompt').innerText = state.currentPrompt;
                         document.getElementById('listenerResponse').innerText = `"${state.currentResponse}"`;
+                        
+                        // Show Lie Input Box ONLY for Two Truths & A Lie game mode
+                        if (state.mode === 'twoTruthsOneLie') {
+                            document.getElementById('lieGuessContainer').classList.remove('hidden');
+                        } else {
+                            document.getElementById('lieGuessContainer').classList.add('hidden');
+                        }
+
                         loadGuessOptions();
                     }
                 }
@@ -329,7 +363,6 @@
             if (remaining <= 0) {
                 clearInterval(localTimerInterval);
                 if (isSpeaker && !state.currentResponse) {
-                    // Time expired for active speaker -> trigger turn skip in Firebase
                     db.ref('gameState').update({ isSkipped: true });
                 }
                 return;
@@ -385,6 +418,7 @@
 
         db.ref('gameState').set({
             hostId: myId,
+            mode: mode,
             schedule: schedule,
             currentRound: 1,
             totalRounds: schedule.length,
@@ -433,15 +467,25 @@
 
     async function submitGuess() {
         const guessRealName = document.getElementById('guessSelect').value;
+        const lieGuess = document.getElementById('lieGuessInput').value.trim();
+        
         const stateSnap = await db.ref('gameState').once('value');
         const state = stateSnap.val();
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
 
+        if (state.mode === 'twoTruthsOneLie' && !lieGuess) {
+            alert("Please type what you think the lie is!");
+            return;
+        }
+
         await db.ref(`gameState/currentGuesses/${myId}`).set({
             guesserRealName: players[myId].realName,
-            guessedRealName: guessRealName
+            guessedRealName: guessRealName,
+            guessedLie: lieGuess || ""
         });
+
+        document.getElementById('lieGuessInput').value = "";
 
         const updatedStateSnap = await db.ref('gameState').once('value');
         const updatedState = updatedStateSnap.val();
@@ -540,7 +584,8 @@
                 for (let gId in h.guesses) {
                     const g = h.guesses[gId];
                     const isCorrect = g.guessedRealName === h.speakerRealName;
-                    guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}`;
+                    let lieText = g.guessedLie ? ` (Guessed Lie: "<i>${g.guessedLie}</i>")` : "";
+                    guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}${lieText}`;
                 }
             }
 

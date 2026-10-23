@@ -194,8 +194,6 @@
             list.innerHTML = '';
             
             const playerIds = Object.keys(players);
-            
-            // Lock the host permanently to the first player who joined
             const permanentHostId = playerIds[0];
             let isHost = permanentHostId === myId;
 
@@ -231,7 +229,6 @@
             const speakerId = state.speakerId;
             const hasSubmitted = state.currentResponse !== null && state.currentResponse !== undefined;
 
-            // Reset UI Visibility
             document.getElementById('speakerSection').classList.add('hidden');
             document.getElementById('waitingForSpeakerSection').classList.add('hidden');
             document.getElementById('listenerSection').classList.add('hidden');
@@ -251,7 +248,6 @@
                     document.getElementById('waitingForSpeakerSection').classList.remove('hidden');
                     document.getElementById('currentSpeakerCodename').innerText = state.speakerCodename;
                 } else {
-                    // Check if current user already submitted a guess
                     const myGuess = state.currentGuesses && state.currentGuesses[myId];
                     if (myGuess) {
                         document.getElementById('waitingForGuessesSection').classList.remove('hidden');
@@ -266,6 +262,16 @@
         });
     }
 
+    // Fisher-Yates Shuffle Helper Function
+    function shuffleArray(array) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
     async function startGameSession() {
         const mode = document.getElementById('gameModeSelect').value;
         const roundsPerPlayer = parseInt(document.getElementById('roundsSelect').value);
@@ -274,13 +280,15 @@
         const players = pSnap.val();
         const ids = Object.keys(players);
 
-        // Build Round Schedule
+        // Build Round Schedule with randomized playlist shuffle per round cycle
         let schedule = [];
         const pack = QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen;
         
         for (let r = 0; r < roundsPerPlayer; r++) {
             const prompt = pack[r % pack.length];
-            for (let id of ids) {
+            // Shuffle player order randomly for every set/round cycle
+            const shuffledIds = shuffleArray(ids);
+            for (let id of shuffledIds) {
                 schedule.push({ speakerId: id, prompt: prompt });
             }
         }
@@ -316,7 +324,7 @@
             for (let id in players) {
                 if (id !== myId) {
                     const opt = document.createElement('option');
-                    opt.value = players[id].realName; // Guess using REAL NAME
+                    opt.value = players[id].realName;
                     opt.innerText = players[id].realName;
                     select.appendChild(opt);
                 }
@@ -331,19 +339,16 @@
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
 
-        // Save guess
         await db.ref(`gameState/currentGuesses/${myId}`).set({
             guesserRealName: players[myId].realName,
             guessedRealName: guessRealName
         });
 
-        // Check if all listeners have guessed
         const updatedStateSnap = await db.ref('gameState').once('value');
         const updatedState = updatedStateSnap.val();
         const numGuesses = Object.keys(updatedState.currentGuesses || {}).length;
         const totalPlayers = Object.keys(players).length;
 
-        // If everyone except the speaker has submitted a guess, advance the round!
         if (numGuesses >= totalPlayers - 1) {
             advanceRound(updatedState, players);
         }
@@ -352,7 +357,6 @@
     async function advanceRound(state, players) {
         let history = state.history || [];
         
-        // Push round details to permanent history
         history.push({
             round: state.currentRound,
             prompt: state.currentPrompt,
@@ -377,7 +381,6 @@
                 history: history
             });
         } else {
-            // End of Game
             db.ref('gameState').update({
                 gameOver: true,
                 history: history
@@ -389,7 +392,6 @@
         const history = state.history || [];
         const scores = {};
 
-        // Calculate Scores (+1 point for each correct guess)
         history.forEach(h => {
             const correctRealName = h.speakerRealName;
             for (let gId in h.guesses) {
@@ -401,7 +403,6 @@
             }
         });
 
-        // Render Leaderboard
         const lbContainer = document.getElementById('leaderboardContainer');
         lbContainer.innerHTML = '';
         
@@ -420,7 +421,6 @@
             });
         }
 
-        // Render Full Game Recap
         const recapContainer = document.getElementById('recapContainer');
         recapContainer.innerHTML = '';
 

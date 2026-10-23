@@ -154,7 +154,6 @@
             if (state.audioData) {
                 const playerAudio = document.getElementById('audioPlayback');
                 playerAudio.src = state.audioData;
-                // Deep voice pitch drop adjustment
                 playerAudio.playbackRate = 0.8; 
             }
         });
@@ -205,8 +204,9 @@
                 const reader = new FileReader();
                 reader.readAsDataURL(blob);
                 reader.onloadend = () => {
-                    db.ref('tempAudio').set(reader.result);
-                    document.getElementById('recStatus').innerText = "Deep voice recorded & ready!";
+                    // Instantly sync audio to gameState so all listeners receive it
+                    db.ref('gameState/audioData').set(reader.result);
+                    document.getElementById('recStatus').innerText = "Deep voice recorded & uploaded!";
                 };
             };
         } catch (err) { alert("Microphone access is required!"); }
@@ -249,11 +249,9 @@
         const guess = document.getElementById('guessSelect').value;
         const stateSnap = await db.ref('gameState').once('value');
         const state = stateSnap.val();
-        const audioSnap = await db.ref('tempAudio').once('value');
-        const audioData = audioSnap.val();
 
-        if (!audioData) {
-            alert("Please record your voice before submitting!");
+        if (!state.audioData) {
+            alert("Please record and upload your voice before submitting!");
             return;
         }
 
@@ -263,7 +261,7 @@
             round: state.currentRound,
             speakerCodename: state.speakerCodename,
             speakerRealName: state.speakerRealName,
-            audio: audioData,
+            audio: state.audioData,
             guess: guess
         });
 
@@ -274,7 +272,6 @@
             const pSnap = await db.ref('players').once('value');
             const players = pSnap.val();
 
-            db.ref('tempAudio').remove();
             db.ref('gameState').update({
                 currentRound: nextRoundNum,
                 speakerId: nextSpeakerId,
@@ -309,6 +306,7 @@
                 <p><b>Round ${index + 1}</b></p>
                 <p>Speaker Codename: <span style="color:#38bdf8;">${h.speakerCodename}</span></p>
                 <p>Real Name: <b style="color:#4ade80;">${h.speakerRealName}</b></p>
+                <p>Your Guess: <i>${h.guess}</i></p>
                 <audio controls src="${h.audio}" style="width:100%; margin: 10px 0;" onplay="this.playbackRate=0.8;"></audio>
             `;
             container.appendChild(div);

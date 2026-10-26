@@ -18,7 +18,7 @@
             --text-muted: #94a3b8;
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-main); color: var(--text-main); text-align: center; margin: 0; padding: 20px; }
-        .card { background: var(--card-bg); max-width: 650px; margin: 0 auto; padding: 30px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); position: relative; }
+        .card { background: var(--card-bg); max-width: 700px; margin: 0 auto; padding: 35px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); position: relative; }
         input, select, textarea, button { width: 100%; padding: 14px; margin-top: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         input, textarea, select { background: var(--input-bg); color: white; outline: none; }
         input:focus, select:focus, textarea:focus { border: 2px solid #38bdf8; }
@@ -30,7 +30,7 @@
         li { background: var(--input-bg); margin-top: 8px; padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
         .prompt-box { background: #0284c7; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 18px; margin: 15px 0; }
         .response-box { background: #475569; padding: 18px; border-radius: 10px; font-style: italic; margin: 15px 0; word-break: break-word; }
-        .score-badge { background: #22c55e; color: black; padding: 4px 12px; border-radius: 14px; font-weight: bold; }
+        
         .rules-box { background: var(--input-bg); padding: 20px; border-radius: 12px; text-align: left; font-size: 14px; margin-bottom: 20px; color: #cbd5e1; }
         .rules-box h3 { margin-top: 0; color: #38bdf8; font-size: 18px; }
         .rules-box ul { padding-left: 18px; list-style: disc; }
@@ -39,6 +39,14 @@
         .timer-badge { font-size: 20px; font-weight: bold; color: #f43f5e; background: #881337; padding: 8px 18px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
         .skip-box { background: #ef4444; color: white; padding: 20px; border-radius: 10px; font-weight: bold; font-size: 18px; margin: 20px 0; }
         .progress-badge { position: absolute; top: 15px; left: 15px; background: #38bdf8; color: #0f172a; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+
+        /* Mode Selection Boxes (Create / Join) */
+        .room-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .room-mode-box { background: var(--input-bg); border: 2px solid transparent; padding: 25px 15px; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+        .room-mode-box:hover { border-color: #38bdf8; }
+        .room-mode-box.selected { border-color: #38bdf8; background: #1e293b; box-shadow: 0 0 15px rgba(56,189,248,0.3); }
+        .room-mode-box h3 { margin: 0 0 8px 0; color: #38bdf8; font-size: 18px; }
+        .room-mode-box p { margin: 0; font-size: 13px; color: var(--text-muted); }
 
         /* Visual Avatar Customizer UI */
         .avatar-creator { background: var(--input-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -60,6 +68,13 @@
         .setup-card.selected { border-color: #38bdf8; background: #1e293b; box-shadow: 0 0 12px rgba(56,189,248,0.3); }
         .setup-card h4 { margin: 0 0 5px 0; color: #38bdf8; font-size: 16px; }
         .setup-card p { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+        /* Professional Expanded Leaderboard */
+        .leaderboard-card { background: linear-gradient(135deg, #334155, #1e293b); border-left: 5px solid #38bdf8; padding: 18px 22px; margin-bottom: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .leaderboard-rank { font-size: 20px; font-weight: bold; color: #38bdf8; width: 45px; }
+        .leaderboard-info { text-align: left; flex: 1; }
+        .leaderboard-name { font-size: 18px; font-weight: bold; color: white; }
+        .leaderboard-score-badge { background: #22c55e; color: #0f172a; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 2px 8px rgba(34,197,94,0.4); }
 
         /* Chat Box Component */
         .chat-container { margin-top: 25px; background: var(--input-bg); border-radius: 12px; padding: 15px; text-align: left; display: flex; flex-direction: column; height: 220px; }
@@ -96,8 +111,28 @@
         <h1>🎭 Masked Icebreaker Game</h1>
         <p id="roundIndicator" style="color: #38bdf8; font-weight: bold;"></p>
         
-        <!-- Login Screen -->
-        <div id="login-screen">
+        <!-- Room Entry Selection Screen (Create or Join Room Code) -->
+        <div id="room-select-screen">
+            <div class="room-mode-grid">
+                <div class="room-mode-box selected" id="createBox" onclick="setRoomMode('create')">
+                    <h3>Create Room</h3>
+                    <p>Host a new game session and generate a private 5-digit room code.</p>
+                </div>
+                <div class="room-mode-box" id="joinBox" onclick="setRoomMode('join')">
+                    <h3>Join Room</h3>
+                    <p>Enter a host's 5-digit room code to join their private game lobby.</p>
+                </div>
+            </div>
+
+            <div id="joinCodeContainer" class="hidden" style="margin-bottom:15px;">
+                <input type="text" id="roomCodeInput" placeholder="Enter 5-digit Room Code (e.g. 06429)" maxlength="5" style="text-align:center; font-size:22px; letter-spacing:3px;">
+            </div>
+
+            <button onclick="proceedToAvatarSetup()">Continue 🚀</button>
+        </div>
+
+        <!-- Login / Avatar Screen -->
+        <div id="login-screen" class="hidden">
             <div class="rules-box">
                 <h3>📖 How to Play & Rules</h3>
                 <ul>
@@ -134,11 +169,10 @@
 
         <!-- Lobby Screen -->
         <div id="lobby-screen" class="hidden">
-            <h2>Waiting Room</h2>
+            <h2>Waiting Room <span id="roomCodeDisplay" style="color:#38bdf8; font-size:18px;"></span></h2>
             <ul id="playerList"></ul>
             
             <div id="hostControls" class="hidden" style="margin-top:20px; border-top:1px solid #475569; padding-top:15px;">
-                <button onclick="copyLobbyLink()" style="background:#0284c7; margin-bottom:15px;">🔗 Copy Lobby Invite Link</button>
                 <p style="text-align:left; margin-bottom:5px;"><b>Host Game Setup:</b></p>
                 
                 <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Select Game Pack:</label>
@@ -157,7 +191,7 @@
                     </div>
                     <div class="setup-card" onclick="selectGameMode('mostLikely', this)">
                         <h4>Most Likely To...</h4>
-                        <p>Vote on who fits scandalous behaviors.</p>
+                        <p>Vote on who fits scandalous behaviors & agree/disagree.</p>
                     </div>
                     <div class="setup-card" onclick="selectGameMode('secretChronicles', this)">
                         <h4>Secret Chronicles</h4>
@@ -257,6 +291,15 @@
                     <input type="text" id="lieGuessInput" placeholder="Type what you think the lie is...">
                 </div>
 
+                <!-- Most Likely To Agree/Disagree Option -->
+                <div id="agreeDisagreeContainer" class="hidden">
+                    <p style="margin-top:15px; margin-bottom:5px;">Do you agree or disagree with this response?</p>
+                    <select id="agreeDisagreeSelect">
+                        <option value="Agree">Agree 👍</option>
+                        <option value="Disagree">Disagree 👎</option>
+                    </select>
+                </div>
+
                 <button onclick="submitGuess()">Submit Guess & Next</button>
             </div>
 
@@ -302,7 +345,7 @@
                 <div id="superlativeResults" style="margin-top:10px; font-size:14px; color:#38bdf8;"></div>
             </div>
 
-            <div id="leaderboardContainer" style="text-align: left; margin: 20px 0;"></div>
+            <div id="leaderboardContainer" style="text-align: left; margin: 25px 0;"></div>
             <h3>📜 Full Game History</h3>
             <div id="recapContainer" style="text-align: left; margin-top: 15px;"></div>
             <button onclick="resetGameSession()" style="margin-top: 20px;">Play Again 🔄</button>
@@ -325,6 +368,10 @@
 
     let myId = 'user_' + Math.random().toString(36).substring(2, 9);
     let myData = {};
+    let currentRoomCode = null;
+    let isUserHost = false;
+    let roomModeSelection = 'create';
+    
     let localTimerInterval = null;
     let rulesCountdownInterval = null;
     let startCountdownInterval = null;
@@ -340,7 +387,6 @@
     let selectedMouth = MOUTH_OPTIONS[0];
 
     function initAvatarBuilder() {
-        // Build skin swatches
         const skinContainer = document.getElementById('skinColorCatalog');
         skinContainer.innerHTML = '';
         SKIN_COLORS.forEach(color => {
@@ -356,7 +402,6 @@
             skinContainer.appendChild(div);
         });
 
-        // Build eyes visual buttons
         const eyesContainer = document.getElementById('eyesCatalog');
         eyesContainer.innerHTML = '';
         EYES_OPTIONS.forEach(eye => {
@@ -372,7 +417,6 @@
             eyesContainer.appendChild(btn);
         });
 
-        // Build mouth visual buttons
         const mouthContainer = document.getElementById('mouthCatalog');
         mouthContainer.innerHTML = '';
         MOUTH_OPTIONS.forEach(mouth => {
@@ -397,7 +441,6 @@
         if (type === 'sunglasses') return '<path d="M4 8 L23 12 L23 20 L4 16 Z" fill="#38bdf8"/><path d="M27 12 L46 8 L46 16 L27 20 Z" fill="#38bdf8"/>';
         if (type === 'star') return '<polygon points="15,4 18,11 25,12 20,17 21,24 15,20 9,24 10,17 5,12 12,11" fill="#38bdf8"/><polygon points="35,4 38,11 45,12 40,17 41,24 35,20 29,24 30,17 25,12 32,11" fill="#38bdf8"/>';
         if (type === 'sleepy') return '<path d="M8 18 Q15 10 22 18" stroke="#38bdf8" stroke-width="3" fill="none"/><path d="M28 18 Q35 10 42 18" stroke="#38bdf8" stroke-width="3" fill="none"/>';
-        // normal
         return '<circle cx="16" cy="15" r="5" fill="#38bdf8"/><circle cx="34" cy="15" r="5" fill="#38bdf8"/>';
     }
 
@@ -407,7 +450,6 @@
         if (type === 'surprised') return '<circle cx="25" cy="15" r="7" fill="#38bdf8"/>';
         if (type === 'tongue') return '<path d="M10 10 Q25 2 40 10" stroke="#38bdf8" stroke-width="4" fill="none"/><path d="M20 15 Q25 28 30 15 Z" fill="#ef4444"/>';
         if (type === 'smirk') return '<path d="M12 18 Q25 10 38 15" stroke="#38bdf8" stroke-width="4" fill="none" stroke-linecap="round"/>';
-        // smile
         return '<path d="M10 10 Q25 25 40 10" stroke="#38bdf8" stroke-width="4" fill="none" stroke-linecap="round"/>';
     }
 
@@ -436,11 +478,7 @@
     }
 
     function getMyCurrentAvatar() {
-        return {
-            skin: selectedSkin,
-            eyes: selectedEyes,
-            mouth: selectedMouth
-        };
+        return { skin: selectedSkin, eyes: selectedEyes, mouth: selectedMouth };
     }
 
     function updateAvatarPreview() {
@@ -449,17 +487,40 @@
 
     initAvatarBuilder();
 
-    // --- COPY LOBBY LINK ---
-    function copyLobbyLink() {
-        const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert("🔗 Lobby link copied to clipboard! Send it to your friends so they can join.");
-        }).catch(err => {
-            prompt("Copy this link to invite players:", url);
-        });
+    // --- ROOM CREATION & CODE JOINING ---
+    function setRoomMode(mode) {
+        roomModeSelection = mode;
+        if (mode === 'create') {
+            document.getElementById('createBox').classList.add('selected');
+            document.getElementById('joinBox').classList.remove('selected');
+            document.getElementById('joinCodeContainer').classList.add('hidden');
+        } else {
+            document.getElementById('joinBox').classList.add('selected');
+            document.getElementById('createBox').classList.remove('selected');
+            document.getElementById('joinCodeContainer').classList.remove('hidden');
+        }
     }
 
-    // --- EXPANDED QUESTION PACKS WITH THOROUGH SHUFFLING ---
+    async function proceedToAvatarSetup() {
+        if (roomModeSelection === 'create') {
+            currentRoomCode = Math.floor(10000 + Math.random() * 90000).toString();
+            isUserHost = true;
+        } else {
+            const code = document.getElementById('roomCodeInput').value.trim();
+            if (code.length !== 5) { alert('Please enter a valid 5-digit room code!'); return; }
+            
+            // Verify room exists in Firebase
+            const snap = await db.ref(`rooms/${code}`).once('value');
+            if (!snap.exists()) { alert('Room code not found! Please check with your host.'); return; }
+            currentRoomCode = code;
+            isUserHost = false;
+        }
+
+        document.getElementById('room-select-screen').classList.add('hidden');
+        document.getElementById('login-screen').classList.remove('hidden');
+    }
+
+    // --- EXPANDED QUESTION PACKS ---
     const QUESTION_PACKS = {
         hesATen: [
             "He/She is a 10, but... causes a huge scene over small things when you're out in public.",
@@ -562,11 +623,14 @@
         if (!realName || !codename) { alert('Fill in both fields!'); return; }
 
         myData = { realName, codename, avatar: getMyCurrentAvatar() };
-        db.ref('players/' + myId).set(myData);
-        db.ref('players/' + myId).onDisconnect().remove();
+        
+        // Save player under room code path
+        db.ref(`rooms/${currentRoomCode}/players/${myId}`).set(myData);
+        db.ref(`rooms/${currentRoomCode}/players/${myId}`).onDisconnect().remove();
 
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('lobby-screen').classList.remove('hidden');
+        document.getElementById('roomCodeDisplay').innerText = `[Room: ${currentRoomCode}]`;
 
         listenToGameState();
         listenToChat();
@@ -579,7 +643,7 @@
         document.getElementById('lobbyChatInput').value = '';
         document.getElementById('gameChatInput').value = '';
 
-        db.ref('chat').push({
+        db.ref(`rooms/${currentRoomCode}/chat`).push({
             sender: myData.codename,
             text: input,
             timestamp: Date.now()
@@ -587,7 +651,7 @@
     }
 
     function listenToChat() {
-        db.ref('chat').limitToLast(50).on('value', snapshot => {
+        db.ref(`rooms/${currentRoomCode}/chat`).limitToLast(50).on('value', snapshot => {
             const data = snapshot.val() || {};
             const lobbyBox = document.getElementById('lobbyChatMessages');
             const gameBox = document.getElementById('gameChatMessages');
@@ -606,29 +670,25 @@
     }
 
     function listenToGameState() {
-        db.ref('players').on('value', snapshot => {
+        db.ref(`rooms/${currentRoomCode}/players`).on('value', snapshot => {
             const players = snapshot.val() || {};
             const list = document.getElementById('playerList');
             list.innerHTML = '';
             
-            const playerIds = Object.keys(players);
-            const permanentHostId = playerIds[0];
-            let isHost = permanentHostId === myId;
-
             for (let id in players) {
                 const li = document.createElement('li');
-                li.innerHTML = `<span><b>${players[id].codename}</b> ${id === permanentHostId ? '(Host)' : ''}</span>`;
+                li.innerHTML = `<span><b>${players[id].codename}</b> ${isUserHost && id === myId ? '(Host)' : ''}</span>`;
                 list.appendChild(li);
             }
 
-            if (isHost) {
+            if (isUserHost) {
                 document.getElementById('hostControls').classList.remove('hidden');
             } else {
                 document.getElementById('hostControls').classList.add('hidden');
             }
         });
 
-        db.ref('gameState').on('value', async snapshot => {
+        db.ref(`rooms/${currentRoomCode}/gameState`).on('value', async snapshot => {
             const state = snapshot.val();
             if (!state) return;
 
@@ -693,9 +753,9 @@
                 let timeLeft = 5;
                 document.getElementById('skipCountdown').innerText = timeLeft;
                 
-                if (myId === state.hostId) {
+                if (isUserHost) {
                     setTimeout(async () => {
-                        const pSnap = await db.ref('players').once('value');
+                        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
                         advanceRound(state, pSnap.val(), true);
                     }, 5000);
                 }
@@ -714,7 +774,7 @@
             }
 
             if (hasSubmitted) {
-                const pSnap = await db.ref('players').once('value');
+                const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
                 const players = pSnap.val() || {};
                 const totalPlayers = Object.keys(players).length;
                 const totalVoters = Math.max(1, totalPlayers - 1);
@@ -753,6 +813,13 @@
                             document.getElementById('lieGuessContainer').classList.add('hidden');
                         }
 
+                        // Show agree/disagree option for mostLikely
+                        if (state.mode === 'mostLikely') {
+                            document.getElementById('agreeDisagreeContainer').classList.remove('hidden');
+                        } else {
+                            document.getElementById('agreeDisagreeContainer').classList.add('hidden');
+                        }
+
                         loadGuessOptions();
                     }
                 }
@@ -765,7 +832,7 @@
             case 'hesATen': return "<b>He/She is a 10, but...</b><br>Each speaker answers a quirky relationship dilemma. Listen carefully to the reasoning style and guess who wrote it!";
             case 'twoTruthsOneLie': return "<b>Two Truths & A Lie</b><br>Speakers share 2 truths and 1 lie. Guessers must select the real author AND correctly type what they think the lie is!";
             case 'wouldYouRather': return "<b>Would You Rather...</b><br>Tough dilemmas are answered secretly. Match the humor and perspective to the right player!";
-            case 'mostLikely': return "<b>Most Likely To...</b><br>Behavioral projection prompts. Who among you is most guilty of this trait?";
+            case 'mostLikely': return "<b>Most Likely To...</b><br>Behavioral projection prompts. Vote on who fits and whether you agree or disagree!";
             case 'secretChronicles': return "<b>Secret Chronicles</b><br>Funny personal stories are shared. Figure out whose past adventure or mishap this is!";
             case 'minuteOfMinutia': return "<b>Minute of Minutia</b><br>Strict 60-second timer! Share a tiny, bizarre detail from your week before time runs out.";
             case 'chatWaterfall': return "<b>Chat Waterfall</b><br>Lightning quick prompt challenges (like emojis). Type fast and guess accurately!";
@@ -783,7 +850,7 @@
             if (remaining <= 0) {
                 clearInterval(localTimerInterval);
                 if (isSpeaker && !state.currentResponse) {
-                    db.ref('gameState').update({ isSkipped: true });
+                    db.ref(`rooms/${currentRoomCode}/gameState`).update({ isSkipped: true });
                 }
                 return;
             }
@@ -810,7 +877,7 @@
         
         if (mode === 'minuteOfMinutia') turnTimerSec = 60;
 
-        const pSnap = await db.ref('players').once('value');
+        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
         const players = pSnap.val();
         const ids = Object.keys(players);
 
@@ -827,7 +894,7 @@
             }
         }
 
-        await db.ref('gameState').set({
+        await db.ref(`rooms/${currentRoomCode}/gameState`).set({
             hostId: myId,
             mode: mode,
             schedule: schedule,
@@ -860,30 +927,29 @@
                 clearInterval(rulesCountdownInterval);
                 startStartCountdown();
             } else {
-                db.ref('gameState/rulesTimer').set(timeLeft);
+                db.ref(`rooms/${currentRoomCode}/gameState/rulesTimer`).set(timeLeft);
             }
         }, 1000);
     }
 
     async function startStartCountdown() {
-        await db.ref('gameState').update({ phase: 'countdown_start', startCountdown: 3 });
+        await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'countdown_start', startCountdown: 3 });
         let count = 3;
         if (startCountdownInterval) clearInterval(startCountdownInterval);
         startCountdownInterval = setInterval(async () => {
             count--;
             if (count <= 0) {
                 clearInterval(startCountdownInterval);
-                await db.ref('gameState').update({ phase: 'playing', turnStartTime: Date.now() });
+                await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'playing', turnStartTime: Date.now() });
             } else {
-                db.ref('gameState/startCountdown').set(count);
+                db.ref(`rooms/${currentRoomCode}/gameState/startCountdown`).set(count);
             }
         }, 1000);
     }
 
     function resetGameSession() {
         if (localTimerInterval) clearInterval(localTimerInterval);
-        db.ref('gameState').remove();
-        db.ref('chat').remove();
+        db.ref(`rooms/${currentRoomCode}`).remove();
         location.reload();
     }
 
@@ -891,11 +957,11 @@
         const text = document.getElementById('speakerResponseInput').value.trim();
         if (!text) { alert("Please type an answer first!"); return; }
         document.getElementById('speakerResponseInput').value = "";
-        db.ref('gameState/currentResponse').set(text);
+        db.ref(`rooms/${currentRoomCode}/gameState/currentResponse`).set(text);
     }
 
     function loadGuessOptions() {
-        db.ref('players').once('value', snapshot => {
+        db.ref(`rooms/${currentRoomCode}/players`).once('value', snapshot => {
             const players = snapshot.val() || {};
             const select = document.getElementById('guessSelect');
             select.innerHTML = '';
@@ -913,10 +979,11 @@
     async function submitGuess() {
         const guessRealName = document.getElementById('guessSelect').value;
         const lieGuess = document.getElementById('lieGuessInput').value.trim();
+        const agreeDisagree = document.getElementById('agreeDisagreeSelect').value;
         
-        const stateSnap = await db.ref('gameState').once('value');
+        const stateSnap = await db.ref(`rooms/${currentRoomCode}/gameState`).once('value');
         const state = stateSnap.val();
-        const pSnap = await db.ref('players').once('value');
+        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
         const players = pSnap.val();
 
         if (state.mode === 'twoTruthsOneLie' && !lieGuess) {
@@ -924,15 +991,16 @@
             return;
         }
 
-        await db.ref(`gameState/currentGuesses/${myId}`).set({
+        await db.ref(`rooms/${currentRoomCode}/gameState/currentGuesses/${myId}`).set({
             guesserRealName: players[myId].realName,
             guessedRealName: guessRealName,
-            guessedLie: lieGuess || ""
+            guessedLie: lieGuess || "",
+            agreeDisagree: agreeDisagree || ""
         });
 
         document.getElementById('lieGuessInput').value = "";
 
-        const updatedStateSnap = await db.ref('gameState').once('value');
+        const updatedStateSnap = await db.ref(`rooms/${currentRoomCode}/gameState`).once('value');
         const updatedState = updatedStateSnap.val();
         const numGuesses = Object.keys(updatedState.currentGuesses || {}).length;
         const totalPlayers = Object.keys(players).length;
@@ -959,7 +1027,7 @@
 
         if (nextRoundNum <= state.totalRounds) {
             const nextItem = state.schedule[nextRoundNum - 1];
-            db.ref('gameState').update({
+            db.ref(`rooms/${currentRoomCode}/gameState`).update({
                 currentRound: nextRoundNum,
                 speakerId: nextItem.speakerId,
                 speakerCodename: players[nextItem.speakerId].codename,
@@ -977,16 +1045,16 @@
     }
 
     async function triggerEndCountdown(history) {
-        await db.ref('gameState').update({ phase: 'end_countdown', endCountdown: 3, history: history });
+        await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'end_countdown', endCountdown: 3, history: history });
         let count = 3;
         if (endCountdownInterval) clearInterval(endCountdownInterval);
         endCountdownInterval = setInterval(async () => {
             count--;
             if (count <= 0) {
                 clearInterval(endCountdownInterval);
-                await db.ref('gameState').update({ phase: 'podium_reveal' });
+                await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'podium_reveal' });
             } else {
-                db.ref('gameState/endCountdown').set(count);
+                db.ref(`rooms/${currentRoomCode}/gameState/endCountdown`).set(count);
             }
         }, 1000);
     }
@@ -994,7 +1062,7 @@
     async function renderPodium(state) {
         const history = state.history || [];
         const scores = calculateScores(history);
-        const pSnap = await db.ref('players').once('value');
+        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
         const players = pSnap.val() || {};
 
         const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
@@ -1048,11 +1116,11 @@
     }
 
     function showFinalLeaderboardAndVoting() {
-        db.ref('gameState/gameOver').set(true);
+        db.ref(`rooms/${currentRoomCode}/gameState/gameOver`).set(true);
     }
 
     function loadSuperlativeOptions() {
-        db.ref('players').once('value', snapshot => {
+        db.ref(`rooms/${currentRoomCode}/players`).once('value', snapshot => {
             const players = snapshot.val() || {};
             const sel1 = document.getElementById('voteLogicalSelect');
             const sel2 = document.getElementById('voteCreativeSelect');
@@ -1091,11 +1159,15 @@
         } else {
             sortedScores.forEach((name, rank) => {
                 const div = document.createElement('div');
-                div.style.background = "#334155";
-                div.style.padding = "12px";
-                div.style.marginBottom = "8px";
-                div.style.borderRadius = "8px";
-                div.innerHTML = `<b>#${rank + 1} ${name}</b> <span class="score-badge">${scores[name]} pts</span>`;
+                div.className = 'leaderboard-card';
+                div.innerHTML = `
+                    <div class="leaderboard-rank">#${rank + 1}</div>
+                    <div class="leaderboard-info">
+                        <div class="leaderboard-name">${name}</div>
+                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Correct Guesses Score</div>
+                    </div>
+                    <div class="leaderboard-score-badge">${scores[name]} pts</div>
+                `;
                 lbContainer.appendChild(div);
             });
         }
@@ -1106,9 +1178,9 @@
         history.forEach((h, idx) => {
             const div = document.createElement('div');
             div.style.background = "#334155";
-            div.style.padding = "15px";
-            div.style.marginBottom = "12px";
-            div.style.borderRadius = "8px";
+            div.style.padding = "18px";
+            div.style.marginBottom = "14px";
+            div.style.borderRadius = "10px";
 
             let guessesListHTML = "";
             if (h.wasSkipped) {
@@ -1118,16 +1190,17 @@
                     const g = h.guesses[gId];
                     const isCorrect = g.guessedRealName === h.speakerRealName;
                     let lieText = g.guessedLie ? ` (Guessed Lie: "<i>${g.guessedLie}</i>")` : "";
-                    guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}${lieText}`;
+                    let agreeText = g.agreeDisagree ? ` [<b>${g.agreeDisagree}</b>]` : "";
+                    guessesListHTML += `<br>• <b>${g.guesserRealName}</b> guessed <i>${g.guessedRealName}</i> ${isCorrect ? '✅ (+1 pt)' : '❌'}${lieText}${agreeText}`;
                 }
             }
 
             div.innerHTML = `
-                <p style="color:#38bdf8; font-weight:bold; margin:0;">Round ${idx + 1}</p>
+                <p style="color:#38bdf8; font-weight:bold; margin-top:0;">Round ${idx + 1}</p>
                 <p><b>Prompt:</b> ${h.prompt}</p>
                 <p><b>Secret Answer:</b> "${h.response}"</p>
                 <p><b>Real Author:</b> <span style="color:#4ade80; font-weight:bold;">${h.speakerRealName}</span> (Codename: ${h.speakerCodename})</p>
-                <p style="font-size:14px; margin-bottom:0;"><b>Guesses:</b>${guessesListHTML || " None"}</p>
+                <p style="font-size:14px; margin-bottom:0;"><b>Guesses & Votes:</b>${guessesListHTML || " None"}</p>
             `;
             recapContainer.appendChild(div);
         });

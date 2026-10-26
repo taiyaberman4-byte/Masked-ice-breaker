@@ -211,13 +211,6 @@
             </div>
         </div>
 
-        <!-- Rules Intro Screen (15s Countdown) -->
-        <div id="rules-intro-screen" class="hidden intro-screen">
-            <h2 style="color:#38bdf8; margin-top:0;">📖 Game Mode Rules</h2>
-            <div id="rulesIntroText" style="font-size:18px; margin:20px 0; color:#e2e8f0; line-height:1.5;"></div>
-            <p>Starting in <span id="rulesCountdown" style="color:#f43f5e; font-size:32px;">15</span> seconds...</p>
-        </div>
-
         <!-- Start Countdown Screen (3, 2, 1) -->
         <div id="start-countdown-screen" class="hidden countdown-screen">
             <h2>Get Ready!</h2>
@@ -344,7 +337,6 @@
     let isUserHost = false;
     
     let localTimerInterval = null;
-    let rulesCountdownInterval = null;
     let startCountdownInterval = null;
     let endCountdownInterval = null;
 
@@ -572,7 +564,6 @@
 
         myData = { realName, codename, avatar: getMyCurrentAvatar() };
         
-        // Securely set host ID if not already claimed in Firebase
         db.ref('hostId').once('value', snapshot => {
             if (!snapshot.exists()) {
                 db.ref('hostId').set(myId);
@@ -656,19 +647,11 @@
             if (!state) return;
 
             document.getElementById('lobby-screen').classList.add('hidden');
-            document.getElementById('rules-intro-screen').classList.add('hidden');
             document.getElementById('start-countdown-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('end-countdown-screen').classList.add('hidden');
             document.getElementById('podium-screen').classList.add('hidden');
             document.getElementById('reveal-screen').classList.add('hidden');
-
-            if (state.phase === 'rules_intro') {
-                document.getElementById('rules-intro-screen').classList.remove('hidden');
-                document.getElementById('rulesIntroText').innerText = getRulesText(state.mode);
-                document.getElementById('rulesCountdown').innerText = state.rulesTimer || 15;
-                return;
-            }
 
             if (state.phase === 'countdown_start') {
                 document.getElementById('start-countdown-screen').classList.remove('hidden');
@@ -789,19 +772,6 @@
         });
     }
 
-    function getRulesText(mode) {
-        switch(mode) {
-            case 'hesATen': return "<b>He/She is a 10, but...</b><br>Each speaker answers a quirky relationship dilemma. Listen carefully to the reasoning style and guess who wrote it!";
-            case 'twoTruthsOneLie': return "<b>Two Truths & A Lie</b><br>Speakers share 2 truths and 1 lie. Guessers must select the real author AND correctly type what they think the lie is!";
-            case 'wouldYouRather': return "<b>Would You Rather...</b><br>Tough dilemmas are answered secretly. Match the humor and perspective to the right player!";
-            case 'mostLikely': return "<b>Most Likely To...</b><br>Behavioral projection prompts. Vote on who fits and whether you agree or disagree!";
-            case 'secretChronicles': return "<b>Secret Chronicles</b><br>Funny personal stories are shared. Figure out whose past adventure or mishap this is!";
-            case 'minuteOfMinutia': return "<b>Minute of Minutia</b><br>Strict 60-second timer! Share a tiny, bizarre detail from your week before time runs out.";
-            case 'chatWaterfall': return "<b>Chat Waterfall</b><br>Lightning quick prompt challenges (like emojis). Type fast and guess accurately!";
-            default: return "Read the prompt, give your secret answer, and guess your friends!";
-        }
-    }
-
     function startLocalTimer(startTime, totalSec, isSpeaker, state) {
         if (localTimerInterval) clearInterval(localTimerInterval);
 
@@ -873,29 +843,14 @@
             turnStartTime: Date.now(),
             isSkipped: false,
             gameOver: false,
-            phase: 'rules_intro',
-            rulesTimer: 15
+            phase: 'countdown_start',
+            startCountdown: 3
         });
 
-        runRulesTimer();
+        startStartCountdownTimer();
     }
 
-    function runRulesTimer() {
-        let timeLeft = 15;
-        if (rulesCountdownInterval) clearInterval(rulesCountdownInterval);
-        rulesCountdownInterval = setInterval(async () => {
-            timeLeft--;
-            if (timeLeft <= 0) {
-                clearInterval(rulesCountdownInterval);
-                startStartCountdown();
-            } else {
-                db.ref('gameState/rulesTimer').set(timeLeft);
-            }
-        }, 1000);
-    }
-
-    async function startStartCountdown() {
-        await db.ref('gameState').update({ phase: 'countdown_start', startCountdown: 3 });
+    function startStartCountdownTimer() {
         let count = 3;
         if (startCountdownInterval) clearInterval(startCountdownInterval);
         startCountdownInterval = setInterval(async () => {

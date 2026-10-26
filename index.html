@@ -40,14 +40,6 @@
         .skip-box { background: #ef4444; color: white; padding: 20px; border-radius: 10px; font-weight: bold; font-size: 18px; margin: 20px 0; }
         .progress-badge { position: absolute; top: 15px; left: 15px; background: #38bdf8; color: #0f172a; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
 
-        /* Mode Selection Boxes (Create / Join) */
-        .room-mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .room-mode-box { background: var(--input-bg); border: 2px solid transparent; padding: 25px 15px; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
-        .room-mode-box:hover { border-color: #38bdf8; }
-        .room-mode-box.selected { border-color: #38bdf8; background: #1e293b; box-shadow: 0 0 15px rgba(56,189,248,0.3); }
-        .room-mode-box h3 { margin: 0 0 8px 0; color: #38bdf8; font-size: 18px; }
-        .room-mode-box p { margin: 0; font-size: 13px; color: var(--text-muted); }
-
         /* Visual Avatar Customizer UI */
         .avatar-creator { background: var(--input-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
         .avatar-preview { width: 90px; height: 90px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; border: 3px solid #38bdf8; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -111,28 +103,8 @@
         <h1>🎭 Masked Icebreaker Game</h1>
         <p id="roundIndicator" style="color: #38bdf8; font-weight: bold;"></p>
         
-        <!-- Room Entry Selection Screen (Create or Join Room Code) -->
-        <div id="room-select-screen">
-            <div class="room-mode-grid">
-                <div class="room-mode-box selected" id="createBox" onclick="setRoomMode('create')">
-                    <h3>Create Room</h3>
-                    <p>Host a new game session and generate a private 5-digit room code.</p>
-                </div>
-                <div class="room-mode-box" id="joinBox" onclick="setRoomMode('join')">
-                    <h3>Join Room</h3>
-                    <p>Enter a host's 5-digit room code to join their private game lobby.</p>
-                </div>
-            </div>
-
-            <div id="joinCodeContainer" class="hidden" style="margin-bottom:15px;">
-                <input type="text" id="roomCodeInput" placeholder="Enter 5-digit Room Code (e.g. 06429)" maxlength="5" style="text-align:center; font-size:22px; letter-spacing:3px;">
-            </div>
-
-            <button onclick="proceedToAvatarSetup()">Continue 🚀</button>
-        </div>
-
         <!-- Login / Avatar Screen -->
-        <div id="login-screen" class="hidden">
+        <div id="login-screen">
             <div class="rules-box">
                 <h3>📖 How to Play & Rules</h3>
                 <ul>
@@ -169,10 +141,11 @@
 
         <!-- Lobby Screen -->
         <div id="lobby-screen" class="hidden">
-            <h2>Waiting Room <span id="roomCodeDisplay" style="color:#38bdf8; font-size:18px;"></span></h2>
+            <h2>Waiting Room</h2>
             <ul id="playerList"></ul>
             
             <div id="hostControls" class="hidden" style="margin-top:20px; border-top:1px solid #475569; padding-top:15px;">
+                <button onclick="copyLobbyLink()" style="background:#0284c7; margin-bottom:15px;">🔗 Copy Lobby Invite Link</button>
                 <p style="text-align:left; margin-bottom:5px;"><b>Host Game Setup:</b></p>
                 
                 <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Select Game Pack:</label>
@@ -368,9 +341,7 @@
 
     let myId = 'user_' + Math.random().toString(36).substring(2, 9);
     let myData = {};
-    let currentRoomCode = null;
     let isUserHost = false;
-    let roomModeSelection = 'create';
     
     let localTimerInterval = null;
     let rulesCountdownInterval = null;
@@ -487,37 +458,14 @@
 
     initAvatarBuilder();
 
-    // --- ROOM CREATION & CODE JOINING ---
-    function setRoomMode(mode) {
-        roomModeSelection = mode;
-        if (mode === 'create') {
-            document.getElementById('createBox').classList.add('selected');
-            document.getElementById('joinBox').classList.remove('selected');
-            document.getElementById('joinCodeContainer').classList.add('hidden');
-        } else {
-            document.getElementById('joinBox').classList.add('selected');
-            document.getElementById('createBox').classList.remove('selected');
-            document.getElementById('joinCodeContainer').classList.remove('hidden');
-        }
-    }
-
-    async function proceedToAvatarSetup() {
-        if (roomModeSelection === 'create') {
-            currentRoomCode = Math.floor(10000 + Math.random() * 90000).toString();
-            isUserHost = true;
-        } else {
-            const code = document.getElementById('roomCodeInput').value.trim();
-            if (code.length !== 5) { alert('Please enter a valid 5-digit room code!'); return; }
-            
-            // Verify room exists in Firebase
-            const snap = await db.ref(`rooms/${code}`).once('value');
-            if (!snap.exists()) { alert('Room code not found! Please check with your host.'); return; }
-            currentRoomCode = code;
-            isUserHost = false;
-        }
-
-        document.getElementById('room-select-screen').classList.add('hidden');
-        document.getElementById('login-screen').classList.remove('hidden');
+    // --- COPY LOBBY LINK ---
+    function copyLobbyLink() {
+        const url = window.location.href;
+        navigator.clipboard.writeText(url).then(() => {
+            alert("🔗 Lobby invite link copied to clipboard! Send it to your classmates.");
+        }).catch(err => {
+            prompt("Copy this link to invite players:", url);
+        });
     }
 
     // --- EXPANDED QUESTION PACKS ---
@@ -624,16 +572,34 @@
 
         myData = { realName, codename, avatar: getMyCurrentAvatar() };
         
-        // Save player under room code path
-        db.ref(`rooms/${currentRoomCode}/players/${myId}`).set(myData);
-        db.ref(`rooms/${currentRoomCode}/players/${myId}`).onDisconnect().remove();
+        // Securely set host ID if not already claimed in Firebase
+        db.ref('hostId').once('value', snapshot => {
+            if (!snapshot.exists()) {
+                db.ref('hostId').set(myId);
+            }
+        });
+
+        db.ref('players/' + myId).set(myData);
+        db.ref('players/' + myId).onDisconnect().remove();
 
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('lobby-screen').classList.remove('hidden');
-        document.getElementById('roomCodeDisplay').innerText = `[Room: ${currentRoomCode}]`;
 
         listenToGameState();
         listenToChat();
+        listenToHostStatus();
+    }
+
+    function listenToHostStatus() {
+        db.ref('hostId').on('value', snapshot => {
+            const hostId = snapshot.val();
+            isUserHost = (hostId === myId);
+            if (isUserHost) {
+                document.getElementById('hostControls').classList.remove('hidden');
+            } else {
+                document.getElementById('hostControls').classList.add('hidden');
+            }
+        });
     }
 
     // --- CHAT SYSTEM ---
@@ -643,7 +609,7 @@
         document.getElementById('lobbyChatInput').value = '';
         document.getElementById('gameChatInput').value = '';
 
-        db.ref(`rooms/${currentRoomCode}/chat`).push({
+        db.ref('chat').push({
             sender: myData.codename,
             text: input,
             timestamp: Date.now()
@@ -651,7 +617,7 @@
     }
 
     function listenToChat() {
-        db.ref(`rooms/${currentRoomCode}/chat`).limitToLast(50).on('value', snapshot => {
+        db.ref('chat').limitToLast(50).on('value', snapshot => {
             const data = snapshot.val() || {};
             const lobbyBox = document.getElementById('lobbyChatMessages');
             const gameBox = document.getElementById('gameChatMessages');
@@ -670,25 +636,22 @@
     }
 
     function listenToGameState() {
-        db.ref(`rooms/${currentRoomCode}/players`).on('value', snapshot => {
+        db.ref('players').on('value', snapshot => {
             const players = snapshot.val() || {};
             const list = document.getElementById('playerList');
             list.innerHTML = '';
             
-            for (let id in players) {
-                const li = document.createElement('li');
-                li.innerHTML = `<span><b>${players[id].codename}</b> ${isUserHost && id === myId ? '(Host)' : ''}</span>`;
-                list.appendChild(li);
-            }
-
-            if (isUserHost) {
-                document.getElementById('hostControls').classList.remove('hidden');
-            } else {
-                document.getElementById('hostControls').classList.add('hidden');
-            }
+            db.ref('hostId').once('value', hostSnap => {
+                const hostId = hostSnap.val();
+                for (let id in players) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span><b>${players[id].codename}</b> ${id === hostId ? '(Host)' : ''}</span>`;
+                    list.appendChild(li);
+                }
+            });
         });
 
-        db.ref(`rooms/${currentRoomCode}/gameState`).on('value', async snapshot => {
+        db.ref('gameState').on('value', async snapshot => {
             const state = snapshot.val();
             if (!state) return;
 
@@ -755,7 +718,7 @@
                 
                 if (isUserHost) {
                     setTimeout(async () => {
-                        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
+                        const pSnap = await db.ref('players').once('value');
                         advanceRound(state, pSnap.val(), true);
                     }, 5000);
                 }
@@ -774,7 +737,7 @@
             }
 
             if (hasSubmitted) {
-                const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
+                const pSnap = await db.ref('players').once('value');
                 const players = pSnap.val() || {};
                 const totalPlayers = Object.keys(players).length;
                 const totalVoters = Math.max(1, totalPlayers - 1);
@@ -813,7 +776,6 @@
                             document.getElementById('lieGuessContainer').classList.add('hidden');
                         }
 
-                        // Show agree/disagree option for mostLikely
                         if (state.mode === 'mostLikely') {
                             document.getElementById('agreeDisagreeContainer').classList.remove('hidden');
                         } else {
@@ -850,7 +812,7 @@
             if (remaining <= 0) {
                 clearInterval(localTimerInterval);
                 if (isSpeaker && !state.currentResponse) {
-                    db.ref(`rooms/${currentRoomCode}/gameState`).update({ isSkipped: true });
+                    db.ref('gameState').update({ isSkipped: true });
                 }
                 return;
             }
@@ -877,7 +839,7 @@
         
         if (mode === 'minuteOfMinutia') turnTimerSec = 60;
 
-        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
+        const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
         const ids = Object.keys(players);
 
@@ -894,7 +856,7 @@
             }
         }
 
-        await db.ref(`rooms/${currentRoomCode}/gameState`).set({
+        await db.ref('gameState').set({
             hostId: myId,
             mode: mode,
             schedule: schedule,
@@ -927,29 +889,31 @@
                 clearInterval(rulesCountdownInterval);
                 startStartCountdown();
             } else {
-                db.ref(`rooms/${currentRoomCode}/gameState/rulesTimer`).set(timeLeft);
+                db.ref('gameState/rulesTimer').set(timeLeft);
             }
         }, 1000);
     }
 
     async function startStartCountdown() {
-        await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'countdown_start', startCountdown: 3 });
+        await db.ref('gameState').update({ phase: 'countdown_start', startCountdown: 3 });
         let count = 3;
         if (startCountdownInterval) clearInterval(startCountdownInterval);
         startCountdownInterval = setInterval(async () => {
             count--;
             if (count <= 0) {
                 clearInterval(startCountdownInterval);
-                await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'playing', turnStartTime: Date.now() });
+                await db.ref('gameState').update({ phase: 'playing', turnStartTime: Date.now() });
             } else {
-                db.ref(`rooms/${currentRoomCode}/gameState/startCountdown`).set(count);
+                db.ref('gameState/startCountdown').set(count);
             }
         }, 1000);
     }
 
     function resetGameSession() {
         if (localTimerInterval) clearInterval(localTimerInterval);
-        db.ref(`rooms/${currentRoomCode}`).remove();
+        db.ref('gameState').remove();
+        db.ref('chat').remove();
+        db.ref('hostId').remove();
         location.reload();
     }
 
@@ -957,11 +921,11 @@
         const text = document.getElementById('speakerResponseInput').value.trim();
         if (!text) { alert("Please type an answer first!"); return; }
         document.getElementById('speakerResponseInput').value = "";
-        db.ref(`rooms/${currentRoomCode}/gameState/currentResponse`).set(text);
+        db.ref('gameState/currentResponse').set(text);
     }
 
     function loadGuessOptions() {
-        db.ref(`rooms/${currentRoomCode}/players`).once('value', snapshot => {
+        db.ref('players').once('value', snapshot => {
             const players = snapshot.val() || {};
             const select = document.getElementById('guessSelect');
             select.innerHTML = '';
@@ -981,9 +945,9 @@
         const lieGuess = document.getElementById('lieGuessInput').value.trim();
         const agreeDisagree = document.getElementById('agreeDisagreeSelect').value;
         
-        const stateSnap = await db.ref(`rooms/${currentRoomCode}/gameState`).once('value');
+        const stateSnap = await db.ref('gameState').once('value');
         const state = stateSnap.val();
-        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
+        const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
 
         if (state.mode === 'twoTruthsOneLie' && !lieGuess) {
@@ -991,7 +955,7 @@
             return;
         }
 
-        await db.ref(`rooms/${currentRoomCode}/gameState/currentGuesses/${myId}`).set({
+        await db.ref(`gameState/currentGuesses/${myId}`).set({
             guesserRealName: players[myId].realName,
             guessedRealName: guessRealName,
             guessedLie: lieGuess || "",
@@ -1000,7 +964,7 @@
 
         document.getElementById('lieGuessInput').value = "";
 
-        const updatedStateSnap = await db.ref(`rooms/${currentRoomCode}/gameState`).once('value');
+        const updatedStateSnap = await db.ref('gameState').once('value');
         const updatedState = updatedStateSnap.val();
         const numGuesses = Object.keys(updatedState.currentGuesses || {}).length;
         const totalPlayers = Object.keys(players).length;
@@ -1027,7 +991,7 @@
 
         if (nextRoundNum <= state.totalRounds) {
             const nextItem = state.schedule[nextRoundNum - 1];
-            db.ref(`rooms/${currentRoomCode}/gameState`).update({
+            db.ref('gameState').update({
                 currentRound: nextRoundNum,
                 speakerId: nextItem.speakerId,
                 speakerCodename: players[nextItem.speakerId].codename,
@@ -1045,16 +1009,16 @@
     }
 
     async function triggerEndCountdown(history) {
-        await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'end_countdown', endCountdown: 3, history: history });
+        await db.ref('gameState').update({ phase: 'end_countdown', endCountdown: 3, history: history });
         let count = 3;
         if (endCountdownInterval) clearInterval(endCountdownInterval);
         endCountdownInterval = setInterval(async () => {
             count--;
             if (count <= 0) {
                 clearInterval(endCountdownInterval);
-                await db.ref(`rooms/${currentRoomCode}/gameState`).update({ phase: 'podium_reveal' });
+                await db.ref('gameState').update({ phase: 'podium_reveal' });
             } else {
-                db.ref(`rooms/${currentRoomCode}/gameState/endCountdown`).set(count);
+                db.ref('gameState/endCountdown').set(count);
             }
         }, 1000);
     }
@@ -1062,7 +1026,7 @@
     async function renderPodium(state) {
         const history = state.history || [];
         const scores = calculateScores(history);
-        const pSnap = await db.ref(`rooms/${currentRoomCode}/players`).once('value');
+        const pSnap = await db.ref('players').once('value');
         const players = pSnap.val() || {};
 
         const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
@@ -1116,11 +1080,11 @@
     }
 
     function showFinalLeaderboardAndVoting() {
-        db.ref(`rooms/${currentRoomCode}/gameState/gameOver`).set(true);
+        db.ref('gameState/gameOver').set(true);
     }
 
     function loadSuperlativeOptions() {
-        db.ref(`rooms/${currentRoomCode}/players`).once('value', snapshot => {
+        db.ref('players').once('value', snapshot => {
             const players = snapshot.val() || {};
             const sel1 = document.getElementById('voteLogicalSelect');
             const sel2 = document.getElementById('voteCreativeSelect');

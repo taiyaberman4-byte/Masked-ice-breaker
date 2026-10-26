@@ -8,32 +8,82 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; text-align: center; margin: 0; padding: 20px; }
-        .card { background: #1e293b; max-width: 550px; margin: 0 auto; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; }
-        input, select, textarea, button { width: 100%; padding: 12px; margin-top: 12px; border-radius: 6px; border: none; font-size: 16px; box-sizing: border-box; }
-        input, textarea, select { background: #334155; color: white; }
+        :root {
+            --bg-main: #0f172a;
+            --card-bg: #1e293b;
+            --input-bg: #334155;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-main); color: var(--text-main); text-align: center; margin: 0; padding: 20px; }
+        .card { background: var(--card-bg); max-width: 650px; margin: 0 auto; padding: 30px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); position: relative; }
+        input, select, textarea, button { width: 100%; padding: 14px; margin-top: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
+        input, textarea, select { background: var(--input-bg); color: white; outline: none; }
+        input:focus, select:focus, textarea:focus { border: 2px solid #38bdf8; }
         textarea { resize: vertical; min-height: 90px; }
-        button { background: #6366f1; color: white; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #4f46e5; }
+        button { background: var(--accent); color: white; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        button:hover { background: var(--accent-hover); transform: translateY(-1px); }
         .hidden { display: none !important; }
         ul { list-style: none; padding: 0; text-align: left; }
-        li { background: #334155; margin-top: 8px; padding: 10px; border-radius: 6px; }
-        .prompt-box { background: #0284c7; padding: 15px; border-radius: 8px; font-weight: bold; font-size: 18px; margin: 15px 0; }
-        .response-box { background: #475569; padding: 15px; border-radius: 8px; font-style: italic; margin: 15px 0; word-break: break-word; }
-        .score-badge { background: #22c55e; color: black; padding: 4px 10px; border-radius: 12px; font-weight: bold; float: right; }
-        .rules-box { background: #334155; padding: 15px; border-radius: 8px; text-align: left; font-size: 14px; margin-bottom: 20px; color: #cbd5e1; }
-        .rules-box h3 { margin-top: 0; color: #38bdf8; font-size: 16px; }
-        .rules-box ul { padding-left: 15px; list-style: disc; }
-        .rules-box li { background: none; padding: 2px 0; margin-top: 4px; }
-        .sub-text { font-size: 13px; color: #94a3b8; margin-top: 4px; }
-        .timer-badge { font-size: 20px; font-weight: bold; color: #f43f5e; background: #881337; padding: 8px 16px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
-        .skip-box { background: #ef4444; color: white; padding: 20px; border-radius: 8px; font-weight: bold; font-size: 18px; margin: 20px 0; }
-        .progress-badge { position: absolute; top: 15px; left: 15px; background: #38bdf8; color: #0f172a; font-weight: bold; padding: 6px 12px; border-radius: 20px; font-size: 13px; }
+        li { background: var(--input-bg); margin-top: 8px; padding: 12px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; }
+        .prompt-box { background: #0284c7; padding: 18px; border-radius: 10px; font-weight: bold; font-size: 18px; margin: 15px 0; }
+        .response-box { background: #475569; padding: 18px; border-radius: 10px; font-style: italic; margin: 15px 0; word-break: break-word; }
+        .score-badge { background: #22c55e; color: black; padding: 4px 12px; border-radius: 14px; font-weight: bold; }
+        .rules-box { background: var(--input-bg); padding: 20px; border-radius: 12px; text-align: left; font-size: 14px; margin-bottom: 20px; color: #cbd5e1; }
+        .rules-box h3 { margin-top: 0; color: #38bdf8; font-size: 18px; }
+        .rules-box ul { padding-left: 18px; list-style: disc; }
+        .rules-box li { background: none; padding: 3px 0; margin-top: 4px; display: list-item; }
+        .sub-text { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+        .timer-badge { font-size: 20px; font-weight: bold; color: #f43f5e; background: #881337; padding: 8px 18px; border-radius: 20px; display: inline-block; margin-bottom: 10px; }
+        .skip-box { background: #ef4444; color: white; padding: 20px; border-radius: 10px; font-weight: bold; font-size: 18px; margin: 20px 0; }
+        .progress-badge { position: absolute; top: 15px; left: 15px; background: #38bdf8; color: #0f172a; font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 13px; }
+
+        /* Avatar Customizer UI */
+        .avatar-creator { background: var(--input-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; display: flex; flex-direction: column; align-items: center; }
+        .avatar-preview { width: 100px; height: 100px; border-radius: 50%; background: #1e293b; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; border: 3px solid #38bdf8; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .avatar-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; text-align: left; font-size: 13px; }
+        .avatar-controls label { display: flex; flex-direction: column; gap: 4px; color: var(--text-muted); }
+
+        /* Professional Host Setup Cards */
+        .setup-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-top: 15px; text-align: left; }
+        .setup-card { background: var(--input-bg); border: 2px solid transparent; padding: 15px; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+        .setup-card:hover { border-color: #38bdf8; }
+        .setup-card.selected { border-color: #38bdf8; background: #1e293b; box-shadow: 0 0 12px rgba(56,189,248,0.3); }
+        .setup-card h4 { margin: 0 0 5px 0; color: #38bdf8; font-size: 16px; }
+        .setup-card p { margin: 0; font-size: 12px; color: var(--text-muted); }
+
+        /* Chat Box Component */
+        .chat-container { margin-top: 25px; background: var(--input-bg); border-radius: 12px; padding: 15px; text-align: left; display: flex; flex-direction: column; height: 220px; }
+        .chat-messages { flex: 1; overflow-y: auto; padding-right: 5px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+        .chat-msg { background: #1e293b; padding: 8px 12px; border-radius: 6px; word-break: break-word; }
+        .chat-msg b { color: #38bdf8; }
+        .chat-input-row { display: flex; gap: 8px; margin-top: 10px; }
+        .chat-input-row input { margin-top: 0; padding: 10px; font-size: 14px; }
+        .chat-input-row button { margin-top: 0; width: 90px; padding: 10px; font-size: 14px; }
+
+        /* Intro & Countdown Screens */
+        .intro-screen, .countdown-screen { font-size: 28px; font-weight: bold; padding: 40px 20px; color: #38bdf8; }
+        .countdown-number { font-size: 72px; color: #22c55e; margin: 20px 0; animation: pulse 1s infinite alternate; }
+        @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
+
+        /* Podium Presentation */
+        .podium-stage { display: flex; align-items: flex-end; justify-content: center; gap: 15px; height: 260px; margin: 30px 0 20px 0; }
+        .podium-col { display: flex; flex-direction: column; align-items: center; width: 110px; transition: all 0.5s ease; opacity: 0; transform: translateY(30px); }
+        .podium-col.show { opacity: 1; transform: translateY(0); }
+        .podium-avatar { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 8px; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .podium-bar { width: 100%; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; color: #0f172a; box-shadow: inset 0 5px 10px rgba(255,255,255,0.3); }
+        .podium-1 { height: 160px; background: #fbbf24; }
+        .podium-2 { height: 120px; background: #94a3b8; }
+        .podium-3 { height: 80px; background: #b45309; }
+        .podium-name { font-weight: bold; font-size: 14px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .podium-real { font-size: 11px; color: var(--text-muted); }
     </style>
 </head>
 <body>
     <div class="card">
-        <!-- Live Voting Counter (Top Left Corner) -->
+        <!-- Live Voting Counter -->
         <div id="voteProgressBadge" class="progress-badge hidden">📊 0/0 Guessed</div>
 
         <h1>🎭 Masked Icebreaker Game</h1>
@@ -42,16 +92,59 @@
         <!-- Login Screen -->
         <div id="login-screen">
             <div class="rules-box">
-                <h3>📖 How to Play</h3>
+                <h3>📖 How to Play & Rules</h3>
                 <ul>
-                    <li><b>Enter Details:</b> Type your real name (kept secret until the end) and a secret Codename.</li>
-                    <li><b>The Game:</b> Each round, a unique prompt is given to a player. They answer secretly under their codename.</li>
-                    <li><b>Guessing:</b> Everyone else reads the response and guesses which <i>real person</i> wrote it.</li>
-                    <li><b>Scoring:</b> Earn +1 point for every correct guess. No reveals happen until the final leaderboard!</li>
+                    <li><b>Enter Details:</b> Type your real name and secret Codename, and build your animated character avatar!</li>
+                    <li><b>⚠️ STRICT RULE:</b> You must <b>NOT</b> say your codename or reveal your identity to the other players during the game!</li>
+                    <li><b>The Game:</b> Each round, a unique prompt is given. Answer secretly under your codename.</li>
+                    <li><b>Guessing & Scoring:</b> Read responses, guess the real person (+1 pt), and avoid getting caught!</li>
                 </ul>
             </div>
 
-            <p>Enter your details to join:</p>
+            <div class="avatar-creator">
+                <div class="avatar-preview" id="avatarPreviewContainer"></div>
+                <div class="avatar-controls">
+                    <label>Skin Color:
+                        <select id="avSkin" onchange="updateAvatarPreview()">
+                            <option value="#ffdbac">Fair (#ffdbac)</option>
+                            <option value="#f1c27d" selected>Medium (#f1c27d)</option>
+                            <option value="#e0ac69">Tan (#e0ac69)</option>
+                            <option value="#c68642">Brown (#c68642)</option>
+                            <option value="#8d5524">Dark Brown (#8d5524)</option>
+                            <option value="#ef4444">Crimson Red</option>
+                            <option value="#3b82f6">Electric Blue</option>
+                            <option value="#22c55e">Alien Green</option>
+                            <option value="#ec4899">Neon Pink</option>
+                        </select>
+                    </label>
+                    <label>Eyes:
+                        <select id="avEyes" onchange="updateAvatarPreview()">
+                            <option value="normal">Normal</option>
+                            <option value="wink">Winking 😉</option>
+                            <option value="glasses">Smart Glasses 👓</option>
+                            <option value="sunglasses">Cool Shades 😎</option>
+                        </select>
+                    </label>
+                    <label>Mouth/Lips:
+                        <select id="avMouth" onchange="updateAvatarPreview()">
+                            <option value="smile">Happy Smile 😊</option>
+                            <option value="grin">Big Grin 😁</option>
+                            <option value="neutral">Neutral 😐</option>
+                            <option value="surprised">Surprised 😲</option>
+                        </select>
+                    </label>
+                    <label>Hair/Style:
+                        <select id="avHair" onchange="updateAvatarPreview()">
+                            <option value="spiky">Spiky Hair</option>
+                            <option value="curly">Curly Hair</option>
+                            <option value="bob">Bob Cut</option>
+                            <option value="cap">Baseball Cap 🧢</option>
+                            <option value="bald">Bald</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+
             <input type="text" id="realNameInput" placeholder="Your Real Name (Hidden until the end)">
             <input type="text" id="codenameInput" placeholder="Secret Codename (e.g. Ghost)">
             <button onclick="joinGame()">Join Lobby</button>
@@ -63,32 +156,82 @@
             <ul id="playerList"></ul>
             
             <div id="hostControls" class="hidden" style="margin-top:20px; border-top:1px solid #475569; padding-top:15px;">
-                <p><b>Host Game Setup:</b></p>
+                <p style="text-align:left; margin-bottom:5px;"><b>Host Game Setup:</b></p>
+                
                 <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Select Game Pack:</label>
-                <select id="gameModeSelect">
-                    <option value="hesATen">He/She is a 10, but... (Teen Couples & Drama)</option>
-                    <option value="twoTruthsOneLie">Two Truths & A Lie</option>
-                    <option value="wouldYouRather">Would You Rather...</option>
-                    <option value="mostLikely">Most Likely To...</option>
-                </select>
+                <div class="setup-grid" id="gameModeGrid">
+                    <div class="setup-card selected" onclick="selectGameMode('hesATen', this)">
+                        <h4>He/She is a 10, but...</h4>
+                        <p>Teen couples & relationship drama dilemmas.</p>
+                    </div>
+                    <div class="setup-card" onclick="selectGameMode('twoTruthsOneLie', this)">
+                        <h4>Two Truths & A Lie</h4>
+                        <p>Share 2 truths and 1 lie. Guessers must also name the lie!</p>
+                    </div>
+                    <div class="setup-card" onclick="selectGameMode('wouldYouRather', this)">
+                        <h4>Would You Rather...</h4>
+                        <p>Hilarious and tough choice scenarios.</p>
+                    </div>
+                    <div class="setup-card" onclick="selectGameMode('mostLikely', this)">
+                        <h4>Most Likely To...</h4>
+                        <p>Vote on who fits scandalous behaviors.</p>
+                    </div>
+                    <div class="setup-card" onclick="selectGameMode('secretChronicles', this)">
+                        <h4>Secret Chronicles</h4>
+                        <p>Share a funny/embarrassing story and guess who experienced it.</p>
+                    </div>
+                    <div class="setup-card" onclick="selectGameMode('minuteOfMinutia', this)">
+                        <h4>Minute of Minutia</h4>
+                        <p>60s timer locked. Share one tiny, unique detail from your week.</p>
+                    </div>
+                    <div class="setup-card" onclick="selectGameMode('chatWaterfall', this)">
+                        <h4>Chat Waterfall</h4>
+                        <p>Lightning prompt challenges (e.g. 3 emojis) with instant guessing.</p>
+                    </div>
+                </div>
+                <input type="hidden" id="gameModeSelect" value="hesATen">
 
-                <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Rounds Per Player:</label>
-                <select id="roundsSelect">
-                    <option value="1">1 Round Each</option>
-                    <option value="3" selected>3 Rounds Each</option>
-                    <option value="5">5 Rounds Each</option>
-                </select>
+                <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Rounds Per Player:</label>
+                <div class="setup-grid" style="grid-template-columns: repeat(3, 1fr);" id="roundsGrid">
+                    <div class="setup-card" onclick="selectRounds(1, this)"><h4>1 Round</h4><p>Quick match</p></div>
+                    <div class="setup-card selected" onclick="selectRounds(3, this)"><h4>3 Rounds</h4><p>Balanced session</p></div>
+                    <div class="setup-card" onclick="selectRounds(5, this)"><h4>5 Rounds</h4><p>Marathon game</p></div>
+                </div>
+                <input type="hidden" id="roundsSelect" value="3">
 
-                <label style="display:block; text-align:left; font-size:14px; margin-top:10px;">Turn Timer:</label>
-                <select id="timerSelect">
-                    <option value="0">No Timer (Off)</option>
-                    <option value="30">30 Seconds</option>
-                    <option value="60" selected>1 Minute</option>
-                    <option value="120">2 Minutes</option>
-                </select>
+                <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Turn Timer (Disabled for Minute of Minutia):</label>
+                <div class="setup-grid" style="grid-template-columns: repeat(4, 1fr);" id="timerGrid">
+                    <div class="setup-card" onclick="selectTimer(0, this)"><h4>Off</h4><p>No limit</p></div>
+                    <div class="setup-card" onclick="selectTimer(30, this)"><h4>30s</h4><p>Fast</p></div>
+                    <div class="setup-card selected" onclick="selectTimer(60, this)"><h4>1 Min</h4><p>Standard</p></div>
+                    <div class="setup-card" onclick="selectTimer(120, this)"><h4>2 Min</h4><p>Detailed</p></div>
+                </div>
+                <input type="hidden" id="timerSelect" value="60">
 
-                <button onclick="startGameSession()">Start Game 🚀</button>
+                <button onclick="startGameSession()" style="margin-top:20px;">Start Game 🚀</button>
             </div>
+            
+            <!-- Lobby Chat Box -->
+            <div class="chat-container">
+                <div class="chat-messages" id="lobbyChatMessages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="lobbyChatInput" placeholder="Chat with players..." onkeydown="if(event.key==='Enter')sendChat()">
+                    <button onclick="sendChat()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rules Intro Screen (15s Countdown) -->
+        <div id="rules-intro-screen" class="hidden intro-screen">
+            <h2 style="color:#38bdf8; margin-top:0;">📖 Game Mode Rules</h2>
+            <div id="rulesIntroText" style="font-size:18px; margin:20px 0; color:#e2e8f0; line-height:1.5;"></div>
+            <p>Starting in <span id="rulesCountdown" style="color:#f43f5e; font-size:32px;">15</span> seconds...</p>
+        </div>
+
+        <!-- Start Countdown Screen (3, 2, 1) -->
+        <div id="start-countdown-screen" class="hidden countdown-screen">
+            <h2>Get Ready!</h2>
+            <div class="countdown-number" id="startCountdownNum">3</div>
         </div>
 
         <!-- Game Play Screen -->
@@ -125,7 +268,7 @@
                 <p>Which real person wrote this?</p>
                 <select id="guessSelect"></select>
 
-                <!-- Two Truths & A Lie Guess Input (Shown only in Two Truths mode) -->
+                <!-- Two Truths & A Lie Guess Input -->
                 <div id="lieGuessContainer" class="hidden">
                     <p style="margin-top:15px; margin-bottom:0;">What do you think the <b>LIE</b> is?</p>
                     <input type="text" id="lieGuessInput" placeholder="Type what you think the lie is...">
@@ -137,11 +280,45 @@
             <div id="waitingForGuessesSection" class="hidden">
                 <p>Your guess has been recorded! Waiting for others to submit...</p>
             </div>
+
+            <!-- In-Game Chat Box -->
+            <div class="chat-container">
+                <div class="chat-messages" id="gameChatMessages"></div>
+                <div class="chat-input-row">
+                    <input type="text" id="gameChatInput" placeholder="Chat..." onkeydown="if(event.key==='Enter')sendChat()">
+                    <button onclick="sendChat()">Send</button>
+                </div>
+            </div>
         </div>
 
-        <!-- Final Leaderboard & Recap Screen -->
+        <!-- End Game 3s Countdown before Podium -->
+        <div id="end-countdown-screen" class="hidden countdown-screen">
+            <h2>Rounds Complete! Tallying Scores...</h2>
+            <div class="countdown-number" id="endCountdownNum">3</div>
+        </div>
+
+        <!-- Podium Presentation Screen -->
+        <div id="podium-screen" class="hidden">
+            <h2>🏆 Podium Presentation</h2>
+            <div class="podium-stage" id="podiumStageContainer"></div>
+            <button onclick="showFinalLeaderboardAndVoting()" style="margin-top:20px;">Continue to Leaderboard & Awards 🏅</button>
+        </div>
+
+        <!-- Final Leaderboard, Superlative Voting & Recap Screen -->
         <div id="reveal-screen" class="hidden">
-            <h2>🎉 Final Leaderboard & Recap!</h2>
+            <h2>🎉 Final Leaderboard & Awards</h2>
+            
+            <div style="background:var(--input-bg); padding:15px; border-radius:12px; margin:15px 0;">
+                <h3 style="margin-top:0; color:#38bdf8;">🌟 Superlative Awards Voting</h3>
+                <p style="font-size:13px; color:var(--text-muted);">Vote on who deserves the best superlative for this game session!</p>
+                <label style="display:block; text-align:left; font-size:13px; margin-top:8px;">Most Logical Answers:</label>
+                <select id="voteLogicalSelect"></select>
+                <label style="display:block; text-align:left; font-size:13px; margin-top:8px;">Most Creative / Witty Answers:</label>
+                <select id="voteCreativeSelect"></select>
+                <button onclick="submitSuperlativeVotes()" style="margin-top:10px; background:#22c55e; color:#0f172a;">Submit Votes 🗳️</button>
+                <div id="superlativeResults" style="margin-top:10px; font-size:14px; color:#38bdf8;"></div>
+            </div>
+
             <div id="leaderboardContainer" style="text-align: left; margin: 20px 0;"></div>
             <h3>📜 Full Game History</h3>
             <div id="recapContainer" style="text-align: left; margin-top: 15px;"></div>
@@ -166,8 +343,52 @@
     let myId = 'user_' + Math.random().toString(36).substring(2, 9);
     let myData = {};
     let localTimerInterval = null;
+    let rulesCountdownInterval = null;
+    let startCountdownInterval = null;
+    let endCountdownInterval = null;
 
-    // --- EXPANDED QUESTION PACKS ---
+    // --- AVATAR BUILDER SVG RENDERER ---
+    function generateAvatarSVG(avatar) {
+        if (!avatar) avatar = { skin: '#f1c27d', eyes: 'normal', mouth: 'smile', hair: 'spiky' };
+        let eyeSvg = '<circle cx="38" cy="45" r="5" fill="#0f172a"/><circle cx="62" cy="45" r="5" fill="#0f172a"/>';
+        if (avatar.eyes === 'wink') eyeSvg = '<path d="M33 45 Q38 40 43 45" stroke="#0f172a" stroke-width="3" fill="none"/><circle cx="62" cy="45" r="5" fill="#0f172a"/>';
+        if (avatar.eyes === 'glasses') eyeSvg = '<rect x="30" y="38" width="18" height="14" rx="3" fill="none" stroke="#0f172a" stroke-width="3"/><rect x="52" y="38" width="18" height="14" rx="3" fill="none" stroke="#0f172a" stroke-width="3"/><line x1="48" y1="45" x2="52" y2="45" stroke="#0f172a" stroke-width="3"/>';
+        if (avatar.eyes === 'sunglasses') eyeSvg = '<path d="M28 38 L48 42 L48 50 L28 46 Z" fill="#0f172a"/><path d="M52 42 L72 38 L72 46 L52 50 Z" fill="#0f172a"/><line x1="48" y1="42" x2="52" y2="42" stroke="#0f172a" stroke-width="3"/>';
+
+        let mouthSvg = '<path d="M40 62 Q50 72 60 62" stroke="#0f172a" stroke-width="3" fill="none" stroke-linecap="round"/>';
+        if (avatar.mouth === 'grin') mouthSvg = '<path d="M38 60 Q50 78 62 60 Z" fill="#0f172a"/>';
+        if (avatar.mouth === 'neutral') mouthSvg = '<line x1="40" y1="64" x2="60" y2="64" stroke="#0f172a" stroke-width="3" stroke-linecap="round"/>';
+        if (avatar.mouth === 'surprised') mouthSvg = '<circle cx="50" cy="65" r="6" fill="#0f172a"/>';
+
+        let hairSvg = '<path d="M25 35 Q50 10 75 35 Q80 20 50 15 Q20 20 25 35 Z" fill="#334155"/>';
+        if (avatar.hair === 'curly') hairSvg = '<circle cx="35" cy="25" r="10" fill="#334155"/><circle cx="50" cy="20" r="12" fill="#334155"/><circle cx="65" cy="25" r="10" fill="#334155"/>';
+        if (avatar.hair === 'bob') hairSvg = '<path d="M25 35 Q20 60 30 70 L35 40 Q50 25 65 40 L70 70 Q80 60 75 35 Z" fill="#334155"/>';
+        if (avatar.hair === 'cap') hairSvg = '<path d="M22 35 L78 35 L70 22 L30 22 Z" fill="#ef4444"/><rect x="45" y="20" width="35" height="6" rx="3" fill="#dc2626"/>';
+        if (avatar.hair === 'bald') hairSvg = '';
+
+        return `<svg viewBox="0 0 100 100" width="100%" height="100%">
+            <circle cx="50" cy="50" r="50" fill="${avatar.skin}" />
+            ${hairSvg}
+            ${eyeSvg}
+            ${mouthSvg}
+        </svg>`;
+    }
+
+    function getMyCurrentAvatar() {
+        return {
+            skin: document.getElementById('avSkin').value,
+            eyes: document.getElementById('avEyes').value,
+            mouth: document.getElementById('avMouth').value,
+            hair: document.getElementById('avHair').value
+        };
+    }
+
+    function updateAvatarPreview() {
+        document.getElementById('avatarPreviewContainer').innerHTML = generateAvatarSVG(getMyCurrentAvatar());
+    }
+    updateAvatarPreview();
+
+    // --- EXPANDED QUESTION PACKS WITH THOROUGH SHUFFLING ---
     const QUESTION_PACKS = {
         hesATen: [
             "He/She is a 10, but... causes a huge scene over small things when you're out in public.",
@@ -187,11 +408,11 @@
             "He/She is a 10, but... borrows your clothes/hoodies and never gives them back."
         ],
         twoTruthsOneLie: [
-            "Share 2 TRUE facts and 1 LIE about your past teenage relationships or dating history! (Optional: explain why!)",
-            "Share 2 TRUE rebellious things you've done in school and 1 LIE! (Optional: explain why!)",
-            "Share 2 TRUE secrets you've kept from your parents and 1 LIE! (Optional: explain why!)",
-            "Share 2 TRUE embarrassing moments in public and 1 LIE! (Optional: explain why!)",
-            "Share 2 TRUE hidden talents/skills you have and 1 LIE! (Optional: explain why!)"
+            "Share 2 TRUE facts and 1 LIE about your past teenage relationships or dating history! (Explain why!)",
+            "Share 2 TRUE rebellious things you've done in school and 1 LIE! (Explain why!)",
+            "Share 2 TRUE secrets you've kept from your parents and 1 LIE! (Explain why!)",
+            "Share 2 TRUE embarrassing moments in public and 1 LIE! (Explain why!)",
+            "Share 2 TRUE hidden talents/skills you have and 1 LIE! (Explain why!)"
         ],
         wouldYouRather: [
             "Would you rather... accidentally send a risky text to your crush's parents or your teacher?",
@@ -206,15 +427,71 @@
             "Who is most likely to... get caught doing something rebellious at school?",
             "Who is most likely to... text an ex at 2 AM?",
             "Who is most likely to... get banned from a local mall or venue?"
+        ],
+        secretChronicles: [
+            "Tell a funny or embarrassing story about a time you got completely lost in an unfamiliar place. Guess whose story this is!",
+            "Describe a hilarious kitchen or cooking disaster you experienced. Guess who cooked this up!",
+            "Share a story about an awkward encounter with a celebrity, teacher, or authority figure.",
+            "Tell about a time you tried to pull off a secret prank and it completely backfired on you."
+        ],
+        minuteOfMinutia: [
+            "Share one tiny, weirdly specific detail from your week (e.g. staring at a microwave counting down from 3).",
+            "Share a minor annoyance you encountered this week that drove you crazy.",
+            "Share one random item currently sitting within 3 feet of you right now."
+        ],
+        chatWaterfall: [
+            "Describe your current morning routine using only three emojis.",
+            "If your current mood was a weather forecast, describe it in 5 words.",
+            "Name the weirdest snack combination you secretly love."
         ]
     };
+
+    function shuffleArray(array) {
+        let arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // --- SETUP SELECTORS ---
+    function selectGameMode(mode, el) {
+        document.querySelectorAll('#gameModeGrid .setup-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('gameModeSelect').value = mode;
+
+        // If Minute of Minutia is selected, lock timer to 60s
+        if (mode === 'minuteOfMinutia') {
+            document.getElementById('timerSelect').value = 60;
+            document.querySelectorAll('#timerGrid .setup-card').forEach((c, idx) => {
+                c.style.opacity = idx === 2 ? '1' : '0.4';
+            });
+        } else {
+            document.querySelectorAll('#timerGrid .setup-card').forEach(c => c.style.opacity = '1');
+        }
+    }
+
+    function selectRounds(rounds, el) {
+        document.querySelectorAll('#roundsGrid .setup-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('roundsSelect').value = rounds;
+    }
+
+    function selectTimer(sec, el) {
+        const mode = document.getElementById('gameModeSelect').value;
+        if (mode === 'minuteOfMinutia') return; // locked
+        document.querySelectorAll('#timerGrid .setup-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('timerSelect').value = sec;
+    }
 
     function joinGame() {
         const realName = document.getElementById('realNameInput').value.trim();
         const codename = document.getElementById('codenameInput').value.trim();
         if (!realName || !codename) { alert('Fill in both fields!'); return; }
 
-        myData = { realName, codename };
+        myData = { realName, codename, avatar: getMyCurrentAvatar() };
         db.ref('players/' + myId).set(myData);
         db.ref('players/' + myId).onDisconnect().remove();
 
@@ -222,6 +499,40 @@
         document.getElementById('lobby-screen').classList.remove('hidden');
 
         listenToGameState();
+        listenToChat();
+    }
+
+    // --- CHAT SYSTEM ---
+    function sendChat() {
+        const input = document.getElementById('lobbyChatInput').value.trim() || document.getElementById('gameChatInput').value.trim();
+        if (!input) return;
+        document.getElementById('lobbyChatInput').value = '';
+        document.getElementById('gameChatInput').value = '';
+
+        db.ref('chat').push({
+            sender: myData.codename,
+            text: input,
+            timestamp: Date.now()
+        });
+    }
+
+    function listenToChat() {
+        db.ref('chat').limitToLast(50).on('value', snapshot => {
+            const data = snapshot.val() || {};
+            const lobbyBox = document.getElementById('lobbyChatMessages');
+            const gameBox = document.getElementById('gameChatMessages');
+            lobbyBox.innerHTML = '';
+            gameBox.innerHTML = '';
+
+            for (let id in data) {
+                const msg = data[id];
+                const html = `<div class="chat-msg"><b>${msg.sender}:</b> ${msg.text}</div>`;
+                lobbyBox.innerHTML += html;
+                gameBox.innerHTML += html;
+            }
+            lobbyBox.scrollTop = lobbyBox.scrollHeight;
+            gameBox.scrollTop = gameBox.scrollHeight;
+        });
     }
 
     function listenToGameState() {
@@ -236,7 +547,7 @@
 
             for (let id in players) {
                 const li = document.createElement('li');
-                li.innerText = `${players[id].codename} ${id === permanentHostId ? '(Host)' : ''}`;
+                li.innerHTML = `<span><b>${players[id].codename}</b> ${id === permanentHostId ? '(Host)' : ''}</span>`;
                 list.appendChild(li);
             }
 
@@ -251,17 +562,50 @@
             const state = snapshot.val();
             if (!state) return;
 
+            // Hide main lobby/screens initially when game starts
             document.getElementById('lobby-screen').classList.add('hidden');
+            document.getElementById('rules-intro-screen').classList.add('hidden');
+            document.getElementById('start-countdown-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('end-countdown-screen').classList.add('hidden');
+            document.getElementById('podium-screen').classList.add('hidden');
+            document.getElementById('reveal-screen').classList.add('hidden');
+
+            if (state.phase === 'rules_intro') {
+                document.getElementById('rules-intro-screen').classList.remove('hidden');
+                document.getElementById('rulesIntroText').innerText = getRulesText(state.mode);
+                document.getElementById('rulesCountdown').innerText = state.rulesTimer || 15;
+                return;
+            }
+
+            if (state.phase === 'countdown_start') {
+                document.getElementById('start-countdown-screen').classList.remove('hidden');
+                document.getElementById('startCountdownNum').innerText = state.startCountdown || 3;
+                return;
+            }
+
+            if (state.phase === 'end_countdown') {
+                document.getElementById('end-countdown-screen').classList.remove('hidden');
+                document.getElementById('endCountdownNum').innerText = state.endCountdown || 3;
+                return;
+            }
+
+            if (state.phase === 'podium_reveal') {
+                document.getElementById('podium-screen').classList.remove('hidden');
+                renderPodium(state);
+                return;
+            }
 
             if (state.gameOver) {
                 if (localTimerInterval) clearInterval(localTimerInterval);
                 document.getElementById('voteProgressBadge').classList.add('hidden');
-                document.getElementById('game-screen').classList.add('hidden');
                 document.getElementById('reveal-screen').classList.remove('hidden');
                 renderLeaderboardAndRecap(state);
+                loadSuperlativeOptions();
                 return;
             }
 
+            // Normal Gameplay Screen
             document.getElementById('game-screen').classList.remove('hidden');
             document.getElementById('roundIndicator').innerText = `Round ${state.currentRound} of ${state.totalRounds}`;
 
@@ -273,7 +617,6 @@
             document.getElementById('waitingForGuessesSection').classList.add('hidden');
             document.getElementById('voteProgressBadge').classList.add('hidden');
 
-            // Handle skipped state banner
             if (state.isSkipped) {
                 if (localTimerInterval) clearInterval(localTimerInterval);
                 document.getElementById('gameTitle').innerText = "Turn Skipped!";
@@ -295,7 +638,6 @@
             const speakerId = state.speakerId;
             const hasSubmitted = state.currentResponse !== null && state.currentResponse !== undefined;
 
-            // Timer display setup
             if (state.turnTimerSec > 0 && !hasSubmitted && state.turnStartTime) {
                 startLocalTimer(state.turnStartTime, state.turnTimerSec, speakerId === myId, state);
             } else {
@@ -304,7 +646,6 @@
                 document.getElementById('waitingTimerDisplay').classList.add('hidden');
             }
 
-            // Top-Left Voting Progress Counter (shown when speaker has submitted response)
             if (hasSubmitted) {
                 const pSnap = await db.ref('players').once('value');
                 const players = pSnap.val() || {};
@@ -339,7 +680,6 @@
                         document.getElementById('listenerPrompt').innerText = state.currentPrompt;
                         document.getElementById('listenerResponse').innerText = `"${state.currentResponse}"`;
                         
-                        // Show Lie Input Box ONLY for Two Truths & A Lie game mode
                         if (state.mode === 'twoTruthsOneLie') {
                             document.getElementById('lieGuessContainer').classList.remove('hidden');
                         } else {
@@ -351,6 +691,19 @@
                 }
             }
         });
+    }
+
+    function getRulesText(mode) {
+        switch(mode) {
+            case 'hesATen': return "<b>He/She is a 10, but...</b><br>Each speaker answers a quirky relationship dilemma. Listen carefully to the reasoning style and guess who wrote it!";
+            case 'twoTruthsOneLie': return "<b>Two Truths & A Lie</b><br>Speakers share 2 truths and 1 lie. Guessers must select the real author AND correctly type what they think the lie is!";
+            case 'wouldYouRather': return "<b>Would You Rather...</b><br>Tough dilemmas are answered secretly. Match the humor and perspective to the right player!";
+            case 'mostLikely': return "<b>Most Likely To...</b><br>Behavioral projection prompts. Who among you is most guilty of this trait?";
+            case 'secretChronicles': return "<b>Secret Chronicles</b><br>Funny personal stories are shared. Figure out whose past adventure or mishap this is!";
+            case 'minuteOfMinutia': return "<b>Minute of Minutia</b><br>Strict 60-second timer! Share a tiny, bizarre detail from your week before time runs out.";
+            case 'chatWaterfall': return "<b>Chat Waterfall</b><br>Lightning quick prompt challenges (like emojis). Type fast and guess accurately!";
+            default: return "Read the prompt, give your secret answer, and guess your friends!";
+        }
     }
 
     function startLocalTimer(startTime, totalSec, isSpeaker, state) {
@@ -383,28 +736,19 @@
         localTimerInterval = setInterval(updateTimer, 1000);
     }
 
-    // Fisher-Yates Shuffle
-    function shuffleArray(array) {
-        let arr = [...array];
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-    }
-
     async function startGameSession() {
         const mode = document.getElementById('gameModeSelect').value;
         const roundsPerPlayer = parseInt(document.getElementById('roundsSelect').value);
-        const turnTimerSec = parseInt(document.getElementById('timerSelect').value);
+        let turnTimerSec = parseInt(document.getElementById('timerSelect').value);
         
+        if (mode === 'minuteOfMinutia') turnTimerSec = 60; // Hardcoded 1 minute timer for this mode
+
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val();
         const ids = Object.keys(players);
 
         let pack = shuffleArray(QUESTION_PACKS[mode] || QUESTION_PACKS.hesATen);
         let questionIndex = 0;
-
         let schedule = [];
 
         for (let r = 0; r < roundsPerPlayer; r++) {
@@ -416,7 +760,8 @@
             }
         }
 
-        db.ref('gameState').set({
+        // Phase 1: Rules Intro (15 seconds)
+        await db.ref('gameState').set({
             hostId: myId,
             mode: mode,
             schedule: schedule,
@@ -432,13 +777,48 @@
             turnTimerSec: turnTimerSec,
             turnStartTime: Date.now(),
             isSkipped: false,
-            gameOver: false
+            gameOver: false,
+            phase: 'rules_intro',
+            rulesTimer: 15
         });
+
+        // Run Rules Countdown
+        runRulesTimer();
+    }
+
+    function runRulesTimer() {
+        let timeLeft = 15;
+        if (rulesCountdownInterval) clearInterval(rulesCountdownInterval);
+        rulesCountdownInterval = setInterval(async () => {
+            timeLeft--;
+            if (timeLeft <= 0) {
+                clearInterval(rulesCountdownInterval);
+                startStartCountdown();
+            } else {
+                db.ref('gameState/rulesTimer').set(timeLeft);
+            }
+        }, 1000);
+    }
+
+    async function startStartCountdown() {
+        await db.ref('gameState').update({ phase: 'countdown_start', startCountdown: 3 });
+        let count = 3;
+        if (startCountdownInterval) clearInterval(startCountdownInterval);
+        startCountdownInterval = setInterval(async () => {
+            count--;
+            if (count <= 0) {
+                clearInterval(startCountdownInterval);
+                await db.ref('gameState').update({ phase: 'playing', turnStartTime: Date.now() });
+            } else {
+                db.ref('gameState/startCountdown').set(count);
+            }
+        }, 1000);
     }
 
     function resetGameSession() {
         if (localTimerInterval) clearInterval(localTimerInterval);
         db.ref('gameState').remove();
+        db.ref('chat').remove();
         location.reload();
     }
 
@@ -527,17 +907,73 @@
                 history: history
             });
         } else {
-            db.ref('gameState').update({
-                gameOver: true,
-                history: history
-            });
+            // Trigger 3s End Countdown before Podium
+            triggerEndCountdown(history);
         }
     }
 
-    function renderLeaderboardAndRecap(state) {
-        const history = state.history || [];
-        const scores = {};
+    async function triggerEndCountdown(history) {
+        await db.ref('gameState').update({ phase: 'end_countdown', endCountdown: 3, history: history });
+        let count = 3;
+        if (endCountdownInterval) clearInterval(endCountdownInterval);
+        endCountdownInterval = setInterval(async () => {
+            count--;
+            if (count <= 0) {
+                clearInterval(endCountdownInterval);
+                await db.ref('gameState').update({ phase: 'podium_reveal' });
+            } else {
+                db.ref('gameState/endCountdown').set(count);
+            }
+        }, 1000);
+    }
 
+    async function renderPodium(state) {
+        const history = state.history || [];
+        const scores = calculateScores(history);
+        const pSnap = await db.ref('players').once('value');
+        const players = pSnap.val() || {};
+
+        // Sort scores descending
+        const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
+        
+        // Find top 3 (1st, 2nd, 3rd)
+        let top3 = []; // format: [ {name, realName, score, avatar}, ... ]
+        sortedScores.slice(0, 3).forEach(name => {
+            // Find player data
+            let pData = Object.values(players).find(p => p.realName === name);
+            top3.push({
+                realName: name,
+                codename: pData ? pData.codename : name,
+                avatar: pData ? pData.avatar : null,
+                score: scores[name]
+            });
+        });
+
+        // Podium arrangement order in HTML flex: 2nd place, 1st place, 3rd place (standard visual podium)
+        let displayOrder = [];
+        if (top3[1]) displayOrder.push({ ...top3[1], place: 2, className: 'podium-2' });
+        if (top3[0]) displayOrder.push({ ...top3[0], place: 1, className: 'podium-1' });
+        if (top3[2]) displayOrder.push({ ...top3[2], place: 3, className: 'podium-3' });
+
+        const stage = document.getElementById('podiumStageContainer');
+        stage.innerHTML = '';
+
+        displayOrder.forEach((p, idx) => {
+            const col = document.createElement('div');
+            col.className = 'podium-col';
+            col.innerHTML = `
+                <div class="podium-avatar">${generateAvatarSVG(p.avatar)}</div>
+                <div style="font-weight:bold; font-size:13px; color:#38bdf8;">${p.codename}</div>
+                <div class="podium-real">${p.realName}</div>
+                <div class="podium-bar ${p.className}">#${p.place}</div>
+            `;
+            stage.appendChild(col);
+            setTimeout(() => col.classList.add('show'), 300 * (idx + 1));
+        });
+    }
+
+    function calculateScores(history) {
+        const scores = {};
         history.forEach(h => {
             const correctRealName = h.speakerRealName;
             for (let gId in h.guesses) {
@@ -548,6 +984,43 @@
                 }
             }
         });
+        return scores;
+    }
+
+    function showFinalLeaderboardAndVoting() {
+        db.ref('gameState/gameOver').set(true);
+    }
+
+    function loadSuperlativeOptions() {
+        db.ref('players').once('value', snapshot => {
+            const players = snapshot.val() || {};
+            const sel1 = document.getElementById('voteLogicalSelect');
+            const sel2 = document.getElementById('voteCreativeSelect');
+            sel1.innerHTML = '';
+            sel2.innerHTML = '';
+            for (let id in players) {
+                const opt1 = document.createElement('option');
+                opt1.value = players[id].realName;
+                opt1.innerText = `${players[id].codename} (${players[id].realName})`;
+                sel1.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = players[id].realName;
+                opt2.innerText = `${players[id].codename} (${players[id].realName})`;
+                sel2.appendChild(opt2);
+            }
+        });
+    }
+
+    function submitSuperlativeVotes() {
+        const logicalVote = document.getElementById('voteLogicalSelect').value;
+        const creativeVote = document.getElementById('voteCreativeSelect').value;
+        document.getElementById('superlativeResults').innerText = `✅ Your votes for ${logicalValue} (Logical) & ${creativeVote} (Creative) have been recorded!`;
+    }
+
+    function renderLeaderboardAndRecap(state) {
+        const history = state.history || [];
+        const scores = calculateScores(history);
 
         const lbContainer = document.getElementById('leaderboardContainer');
         lbContainer.innerHTML = '';
@@ -561,7 +1034,7 @@
                 div.style.background = "#334155";
                 div.style.padding = "12px";
                 div.style.marginBottom = "8px";
-                div.style.borderRadius = "6px";
+                div.style.borderRadius = "8px";
                 div.innerHTML = `<b>#${rank + 1} ${name}</b> <span class="score-badge">${scores[name]} pts</span>`;
                 lbContainer.appendChild(div);
             });
@@ -590,7 +1063,7 @@
             }
 
             div.innerHTML = `
-                <p style="color:#38bdf8; font-weight:bold; margin-0;">Round ${idx + 1}</p>
+                <p style="color:#38bdf8; font-weight:bold; margin:0;">Round ${idx + 1}</p>
                 <p><b>Prompt:</b> ${h.prompt}</p>
                 <p><b>Secret Answer:</b> "${h.response}"</p>
                 <p><b>Real Author:</b> <span style="color:#4ade80; font-weight:bold;">${h.speakerRealName}</span> (Codename: ${h.speakerCodename})</p>

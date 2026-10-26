@@ -83,15 +83,14 @@
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
 
         /* Podium Presentation */
-        .podium-stage { display: flex; align-items: flex-end; justify-content: center; gap: 15px; height: 260px; margin: 30px 0 20px 0; }
-        .podium-col { display: flex; flex-direction: column; align-items: center; width: 110px; transition: all 0.5s ease; opacity: 0; transform: translateY(30px); }
+        .podium-stage { display: flex; align-items: flex-end; justify-content: center; gap: 15px; height: 240px; margin: 20px 0 30px 0; }
+        .podium-col { display: flex; flex-direction: column; align-items: center; width: 100px; transition: all 0.5s ease; opacity: 0; transform: translateY(30px); }
         .podium-col.show { opacity: 1; transform: translateY(0); }
-        .podium-avatar { width: 60px; height: 60px; border-radius: 50%; margin-bottom: 8px; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-        .podium-bar { width: 100%; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 22px; color: #0f172a; box-shadow: inset 0 5px 10px rgba(255,255,255,0.3); }
-        .podium-1 { height: 160px; background: #fbbf24; }
-        .podium-2 { height: 120px; background: #94a3b8; }
-        .podium-3 { height: 80px; background: #b45309; }
-        .podium-name { font-weight: bold; font-size: 14px; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+        .podium-avatar { width: 55px; height: 55px; border-radius: 50%; margin-bottom: 6px; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+        .podium-bar { width: 100%; border-radius: 8px 8px 0 0; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; color: #0f172a; box-shadow: inset 0 5px 10px rgba(255,255,255,0.3); }
+        .podium-1 { height: 140px; background: #fbbf24; }
+        .podium-2 { height: 100px; background: #94a3b8; }
+        .podium-3 { height: 70px; background: #b45309; }
         .podium-real { font-size: 11px; color: var(--text-muted); }
     </style>
 </head>
@@ -283,24 +282,18 @@
             </div>
         </div>
 
-        <!-- End Game 3s Countdown before Podium -->
+        <!-- End Game 3s Countdown before Final Combined Screen -->
         <div id="end-countdown-screen" class="hidden countdown-screen">
             <h2>Rounds Complete! Tallying Scores...</h2>
             <div class="countdown-number" id="endCountdownNum">3</div>
         </div>
 
-        <!-- Podium Presentation Screen -->
-        <div id="podium-screen" class="hidden">
-            <h2>🏆 Podium Presentation</h2>
-            <div class="podium-stage" id="podiumStageContainer"></div>
-            <button onclick="showFinalLeaderboardAndVoting()" style="margin-top:20px;">Continue to Leaderboard & Awards 🏅</button>
-        </div>
-
-        <!-- Final Leaderboard, Superlative Voting & Recap Screen -->
+        <!-- Final Leaderboard, Podium & Awards Screen -->
         <div id="reveal-screen" class="hidden">
-            <h2>🎉 Final Leaderboard & Awards</h2>
+            <h2>🏆 Podium & Final Leaderboard</h2>
+            <div class="podium-stage" id="podiumStageContainer"></div>
             
-            <div style="background:var(--input-bg); padding:15px; border-radius:12px; margin:15px 0;">
+            <div style="background:var(--input-bg); padding:15px; border-radius:12px; margin:20px 0;">
                 <h3 style="margin-top:0; color:#38bdf8;">🌟 Superlative Awards Voting</h3>
                 <p style="font-size:13px; color:var(--text-muted);">Vote on who deserves the best superlative for this game session!</p>
                 <label style="display:block; text-align:left; font-size:13px; margin-top:8px;">Most Logical Answers:</label>
@@ -314,7 +307,7 @@
             <div id="leaderboardContainer" style="text-align: left; margin: 25px 0;"></div>
             <h3>📜 Full Game History</h3>
             <div id="recapContainer" style="text-align: left; margin-top: 15px;"></div>
-            <button onclick="resetGameSession()" style="margin-top: 20px;">Play Again 🔄</button>
+            <button onclick="resetGameSession()" style="margin-top: 25px;">Play Again 🔄</button>
         </div>
     </div>
 
@@ -650,7 +643,6 @@
             document.getElementById('start-countdown-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('end-countdown-screen').classList.add('hidden');
-            document.getElementById('podium-screen').classList.add('hidden');
             document.getElementById('reveal-screen').classList.add('hidden');
 
             if (state.phase === 'countdown_start') {
@@ -665,17 +657,13 @@
                 return;
             }
 
-            if (state.phase === 'podium_reveal') {
-                document.getElementById('podium-screen').classList.remove('hidden');
-                renderPodium(state);
-                return;
-            }
-
             if (state.gameOver) {
                 if (localTimerInterval) clearInterval(localTimerInterval);
                 document.getElementById('voteProgressBadge').classList.add('hidden');
                 document.getElementById('reveal-screen').classList.remove('hidden');
-                renderLeaderboardAndRecap(state);
+                
+                // Render Podium & Leaderboard on the same single page
+                renderPodiumAndLeaderboard(state);
                 loadSuperlativeOptions();
                 return;
             }
@@ -971,21 +959,21 @@
             count--;
             if (count <= 0) {
                 clearInterval(endCountdownInterval);
-                await db.ref('gameState').update({ phase: 'podium_reveal' });
+                await db.ref('gameState').update({ phase: 'playing', gameOver: true });
             } else {
                 db.ref('gameState/endCountdown').set(count);
             }
         }, 1000);
     }
 
-    async function renderPodium(state) {
+    async function renderPodiumAndLeaderboard(state) {
         const history = state.history || [];
         const scores = calculateScores(history);
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val() || {};
 
+        // 1. Render Podium
         const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
-        
         let top3 = [];
         sortedScores.slice(0, 3).forEach(name => {
             let pData = Object.values(players).find(p => p.realName === name);
@@ -1010,69 +998,18 @@
             col.className = 'podium-col';
             col.innerHTML = `
                 <div class="podium-avatar">${generateAvatarSVG(p.avatar)}</div>
-                <div style="font-weight:bold; font-size:13px; color:#38bdf8;">${p.codename}</div>
+                <div style="font-weight:bold; font-size:12px; color:#38bdf8; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; width:100%;">${p.codename}</div>
                 <div class="podium-real">${p.realName}</div>
                 <div class="podium-bar ${p.className}">#${p.place}</div>
             `;
             stage.appendChild(col);
-            setTimeout(() => col.classList.add('show'), 300 * (idx + 1));
+            setTimeout(() => col.classList.add('show'), 200 * (idx + 1));
         });
-    }
 
-    function calculateScores(history) {
-        const scores = {};
-        history.forEach(h => {
-            const correctRealName = h.speakerRealName;
-            for (let gId in h.guesses) {
-                const g = h.guesses[gId];
-                if (!scores[g.guesserRealName]) scores[g.guesserRealName] = 0;
-                if (g.guessedRealName === correctRealName) {
-                    scores[g.guesserRealName] += 1;
-                }
-            }
-        });
-        return scores;
-    }
-
-    function showFinalLeaderboardAndVoting() {
-        db.ref('gameState/gameOver').set(true);
-    }
-
-    function loadSuperlativeOptions() {
-        db.ref('players').once('value', snapshot => {
-            const players = snapshot.val() || {};
-            const sel1 = document.getElementById('voteLogicalSelect');
-            const sel2 = document.getElementById('voteCreativeSelect');
-            sel1.innerHTML = '';
-            sel2.innerHTML = '';
-            for (let id in players) {
-                const opt1 = document.createElement('option');
-                opt1.value = players[id].realName;
-                opt1.innerText = `${players[id].codename} (${players[id].realName})`;
-                sel1.appendChild(opt1);
-
-                const opt2 = document.createElement('option');
-                opt2.value = players[id].realName;
-                opt2.innerText = `${players[id].codename} (${players[id].realName})`;
-                sel2.appendChild(opt2);
-            }
-        });
-    }
-
-    function submitSuperlativeVotes() {
-        const logicalVote = document.getElementById('voteLogicalSelect').value;
-        const creativeVote = document.getElementById('voteCreativeSelect').value;
-        document.getElementById('superlativeResults').innerText = `✅ Your votes for ${logicalVote} (Logical) & ${creativeVote} (Creative) have been recorded!`;
-    }
-
-    function renderLeaderboardAndRecap(state) {
-        const history = state.history || [];
-        const scores = calculateScores(history);
-
+        // 2. Render Leaderboard
         const lbContainer = document.getElementById('leaderboardContainer');
         lbContainer.innerHTML = '';
         
-        const sortedScores = Object.keys(scores).sort((a,b) => scores[b] - scores[a]);
         if (sortedScores.length === 0) {
             lbContainer.innerHTML = "<p>No scores recorded.</p>";
         } else {
@@ -1091,6 +1028,7 @@
             });
         }
 
+        // 3. Render Recap
         const recapContainer = document.getElementById('recapContainer');
         recapContainer.innerHTML = '';
 
@@ -1123,6 +1061,48 @@
             `;
             recapContainer.appendChild(div);
         });
+    }
+
+    function calculateScores(history) {
+        const scores = {};
+        history.forEach(h => {
+            const correctRealName = h.speakerRealName;
+            for (let gId in h.guesses) {
+                const g = h.guesses[gId];
+                if (!scores[g.guesserRealName]) scores[g.guesserRealName] = 0;
+                if (g.guessedRealName === correctRealName) {
+                    scores[g.guesserRealName] += 1;
+                }
+            }
+        });
+        return scores;
+    }
+
+    function loadSuperlativeOptions() {
+        db.ref('players').once('value', snapshot => {
+            const players = snapshot.val() || {};
+            const sel1 = document.getElementById('voteLogicalSelect');
+            const sel2 = document.getElementById('voteCreativeSelect');
+            sel1.innerHTML = '';
+            sel2.innerHTML = '';
+            for (let id in players) {
+                const opt1 = document.createElement('option');
+                opt1.value = players[id].realName;
+                opt1.innerText = `${players[id].codename} (${players[id].realName})`;
+                sel1.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = players[id].realName;
+                opt2.innerText = `${players[id].codename} (${players[id].realName})`;
+                sel2.appendChild(opt2);
+            }
+        });
+    }
+
+    function submitSuperlativeVotes() {
+        const logicalVote = document.getElementById('voteLogicalSelect').value;
+        const creativeVote = document.getElementById('voteCreativeSelect').value;
+        document.getElementById('superlativeResults').innerText = `✅ Your votes for ${logicalVote} (Logical) & ${creativeVote} (Creative) have been recorded!`;
     }
 </script>
 </body>

@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
-
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Masked Icebreaker Game</title>
@@ -817,7 +814,17 @@
                 for (let id in players) {
                     const li = document.createElement('li');
                     const kickBtnHTML = (isUserHost && id !== myId) ? `<button class="kick-btn" onclick="kickPlayer('${id}')">Kick ❌</button>` : '';
-                    li.innerHTML = `<span><b>${players[id].codename}</b> ${id === hostId ? '(Host)' : ''}</span>${kickBtnHTML}`;
+                    
+                    // Host tag completely hidden visually while maintaining authority & kick buttons internally
+                    li.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div style="width:35px; height:35px; border-radius:50%; overflow:hidden; border:2px solid #38bdf8;">
+                                ${generateAvatarSVG(players[id].avatar)}
+                            </div>
+                            <span><b>${players[id].codename}</b></span>
+                        </div>
+                        ${kickBtnHTML}
+                    `;
                     list.appendChild(li);
                 }
             });
@@ -898,6 +905,7 @@
                 const pSnap = await db.ref('players').once('value');
                 const players = pSnap.val() || {};
                 const totalPlayers = Object.keys(players).length;
+
                 const totalVoters = Math.max(1, totalPlayers - 1);
                 const currentVotes = Object.keys(state.currentGuesses || {}).length;
 

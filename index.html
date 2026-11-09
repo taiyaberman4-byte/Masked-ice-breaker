@@ -1164,7 +1164,7 @@
         });
     }
 
-    async function submitIdentityGuesses() {
+async function submitIdentityGuesses() {
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val() || {};
         let identityGuesses = {};
@@ -1172,15 +1172,33 @@
         for (let id in players) {
             if (id !== myId) {
                 const p = players[id];
-                const selectedCode = document.getElementById(`identity_guess_${p.realName}`).value;
+                const selectEl = document.getElementById(`identity_guess_${p.realName}`);
+                const selectedCode = selectEl ? selectEl.value : "";
                 if (selectedCode) {
                     identityGuesses[p.realName] = selectedCode;
                 }
             }
         }
 
+        // Save this player's identity guesses
         await db.ref(`gameState/identityGuesses/${myId}`).set(identityGuesses);
-        triggerEndCountdown(db.ref('gameState/history').once('value').then(s => s.val()));
+
+        // Check how many players have submitted their identity guesses so far
+        const stateSnap = await db.ref('gameState').once('value');
+        const currentState = stateSnap.val();
+        const totalPlayers = Object.keys(players).length;
+        const submittedCount = Object.keys(currentState.identityGuesses || {}).length;
+
+        // Only trigger the countdown once EVERY player has submitted their identity guesses
+        if (submittedCount >= totalPlayers && isUserHost) {
+            triggerEndCountdown(db.ref('gameState/history').once('value').then(s => s.val()));
+        } else {
+            // Show waiting message on screen for this player
+            document.getElementById('identity-guessing-screen').innerHTML = `
+                <h2>🕵️ Final Identity Guessing Phase</h2>
+                <p>Your identity guesses have been recorded! Waiting for other players to finish guessing...</p>
+            `;
+        }
     }
 
     async function triggerEndCountdown(historyPromise) {

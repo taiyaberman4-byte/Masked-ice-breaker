@@ -21,7 +21,7 @@
             --text-muted: #94a3b8;
         }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-main); color: var(--text-main); text-align: center; margin: 0; padding: 20px; overflow-x: hidden; }
-        .card { background: var(--card-bg); max-width: 700px; margin: 0 auto; padding: 35px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); position: relative; }
+        .card { background: var(--card-bg); max-width: 750px; margin: 0 auto; padding: 35px; border-radius: 16px; box-shadow: 0 15px 35px rgba(0,0,0,0.6); position: relative; }
         input, select, textarea, button { width: 100%; padding: 14px; margin-top: 12px; border-radius: 8px; border: none; font-size: 16px; box-sizing: border-box; }
         input, textarea, select { background: var(--input-bg); color: white; outline: none; }
         input:focus, select:focus, textarea:focus { border: 2px solid #38bdf8; }
@@ -75,12 +75,11 @@
         .setup-card h4 { margin: 0 0 5px 0; color: #38bdf8; font-size: 16px; }
         .setup-card p { margin: 0; font-size: 12px; color: var(--text-muted); }
 
-        /* Professional Expanded Leaderboard */
-        .leaderboard-card { background: linear-gradient(135deg, #334155, #1e293b); border-left: 5px solid #38bdf8; padding: 18px 22px; margin-bottom: 12px; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .leaderboard-rank { font-size: 20px; font-weight: bold; color: #38bdf8; width: 45px; }
-        .leaderboard-info { text-align: left; flex: 1; }
-        .leaderboard-name { font-size: 18px; font-weight: bold; color: white; }
-        .leaderboard-score-badge { background: #22c55e; color: #0f172a; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 18px; box-shadow: 0 2px 8px rgba(34,197,94,0.4); }
+        /* Neater Leaderboard Results */
+        .result-player-card { background: #334155; padding: 20px; border-radius: 12px; margin-bottom: 16px; text-align: left; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border-left: 5px solid #38bdf8; }
+        .result-stats-row { display: flex; gap: 15px; margin-top: 12px; align-items: center; }
+        .stat-badge { background: #1e293b; padding: 8px 14px; border-radius: 8px; font-weight: bold; font-size: 14px; }
+        .breakdown-box { background: #1e293b; padding: 15px; border-radius: 10px; margin-top: 12px; font-size: 14px; white-space: pre-line; line-height: 1.5; border: 1px solid #475569; }
 
         /* Ghost Award Banner */
         .ghost-award-box { background: linear-gradient(135deg, #7c3aed, #4c1d95); padding: 15px; border-radius: 12px; color: white; font-weight: bold; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
@@ -150,7 +149,7 @@
                 </div>
             </div>
 
-            <input type="text" id="realNameInput" placeholder="Your Real Name (Hidden until the end)">
+            <input type="text" id="realNameInput" placeholder="Your Real Name">
             <input type="text" id="codenameInput" placeholder="Secret Codename (e.g. Ghost)">
             <button onclick="joinGame()">Join Lobby</button>
         </div>
@@ -194,6 +193,10 @@
                         <h4>Chat Waterfall</h4>
                         <p>Lightning prompt challenges (e.g. 3 emojis) with instant guessing.</p>
                     </div>
+                    <div class="setup-card" onclick="selectGameMode('secretPromptPass', this)">
+                        <h4>Secret Prompt Pass</h4>
+                        <p>Pass custom prompts anonymously to random players and guess the author!</p>
+                    </div>
                 </div>
                 <input type="hidden" id="gameModeSelect" value="hesATen">
 
@@ -205,7 +208,7 @@
                 </div>
                 <input type="hidden" id="roundsSelect" value="3">
 
-                <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Turn Timer (Disabled for Minute of Minutia):</label>
+                <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Turn Timer (Writing phase):</label>
                 <div class="setup-grid" style="grid-template-columns: repeat(4, 1fr);" id="timerGrid">
                     <div class="setup-card" onclick="selectTimer(0, this)"><h4>Off</h4><p>No limit</p></div>
                     <div class="setup-card" onclick="selectTimer(30, this)"><h4>30s</h4><p>Fast</p></div>
@@ -213,6 +216,15 @@
                     <div class="setup-card" onclick="selectTimer(120, this)"><h4>2 Min</h4><p>Detailed</p></div>
                 </div>
                 <input type="hidden" id="timerSelect" value="60">
+
+                <label style="display:block; text-align:left; font-size:14px; margin-top:15px;">Voting Timer (Guessing phase):</label>
+                <div class="setup-grid" style="grid-template-columns: repeat(4, 1fr);" id="votingTimerGrid">
+                    <div class="setup-card" onclick="selectVotingTimer(0, this)"><h4>Off</h4><p>No limit</p></div>
+                    <div class="setup-card" onclick="selectVotingTimer(15, this)"><h4>15s</h4><p>Quick</p></div>
+                    <div class="setup-card selected" onclick="selectVotingTimer(30, this)"><h4>30s</h4><p>Standard</p></div>
+                    <div class="setup-card" onclick="selectVotingTimer(60, this)"><h4>1 Min</h4><p>Relaxed</p></div>
+                </div>
+                <input type="hidden" id="votingTimerSelect" value="30">
 
                 <button onclick="startGameSession()" style="margin-top:20px;">Start Game 🚀</button>
             </div>
@@ -251,9 +263,9 @@
             <!-- Speaker Section -->
             <div id="speakerSection" class="hidden">
                 <div id="timerDisplay" class="timer-badge hidden">⏳ <span>--</span>s</div>
+                <div id="speakerCodenameBadge" style="font-size:14px; color:#38bdf8; margin-bottom:5px; font-weight:bold;"></div>
                 <div class="prompt-box" id="speakerPrompt"></div>
-                <textarea id="speakerResponseInput" placeholder="Type your answer here... (Optional: explain why!)"></textarea>
-                <p class="sub-text">(Optional: feel free to explain your reasoning in your answer!)</p>
+                <textarea id="speakerResponseInput" placeholder="Type your answer here..."></textarea>
                 <button onclick="submitResponse()">Submit Secret Answer</button>
             </div>
 
@@ -265,6 +277,7 @@
 
             <!-- Listener Section -->
             <div id="listenerSection" class="hidden">
+                <div id="votingTimerDisplay" class="timer-badge hidden">⏳ Voting <span>--</span>s</div>
                 <p>Read the anonymous response below:</p>
                 <div class="prompt-box" id="listenerPrompt"></div>
                 <div class="response-box" id="listenerResponse"></div>
@@ -313,6 +326,14 @@
             </div>
         </div>
 
+        <!-- Identity Guessing Screen (End Game Phase) -->
+        <div id="identity-guessing-screen" class="hidden">
+            <h2>🕵️ Final Identity Guessing Phase</h2>
+            <p>Match each player's Real Name to their Secret Codename! Correct matches give you bonus points.</p>
+            <div id="identityGuessList" style="text-align:left; margin:20px 0;"></div>
+            <button onclick="submitIdentityGuesses()">Submit All Identity Guesses 🎯</button>
+        </div>
+
         <!-- End Game 3s Countdown before Final Combined Screen -->
         <div id="end-countdown-screen" class="hidden countdown-screen">
             <h2>Rounds Complete! Tallying Scores...</h2>
@@ -343,8 +364,7 @@
             <button onclick="resetGameSession()" style="margin-top: 25px;">Play Again 🔄</button>
         </div>
     </div>
-
-<script>
+    <script>
     const firebaseConfig = {
         apiKey: "AIzaSyCriql3I26apEE5QzIPabsOMApnA4cx0xY",
         authDomain: "masked-voices-3b874.firebaseapp.com",
@@ -363,6 +383,7 @@
     let isUserHost = false;
     
     let localTimerInterval = null;
+    let localVotingTimerInterval = null;
     let startCountdownInterval = null;
     let endCountdownInterval = null;
 
@@ -494,20 +515,16 @@
         setTimeout(() => el.remove(), 2000);
     });
 
-    // --- KICK PLAYER (TEACHER CONTROL) ---
+    // --- KICK PLAYER ---
     function kickPlayer(pId) {
         if (confirm("Are you sure you want to kick this player?")) {
             db.ref(`players/${pId}`).remove();
         }
     }
 
-    // --- FORCE SKIP TURN (TEACHER CONTROL) ---
+    // --- FORCE SKIP TURN ---
     async function forceSkipTurn() {
-        const stateSnap = await db.ref('gameState').once('value');
-        const state = stateSnap.val();
-        if (state) {
-            db.ref('gameState').update({ isSkipped: true });
-        }
+        db.ref('gameState').update({ isSkipped: true });
     }
 
     // --- COPY LOBBY LINK ---
@@ -520,7 +537,7 @@
         });
     }
 
-    // --- MASSIVE QUESTION PACKS (25+ QUESTIONS PER MODE) ---
+    // --- MASSIVE QUESTION PACKS ---
     const QUESTION_PACKS = {
         hesATen: [
             "He/She is a 10, but... causes a huge scene over small things when you're out in public.",
@@ -532,158 +549,54 @@
             "He/She is a 10, but... needs your live location 24/7 and gets anxious if you don't text back instantly.",
             "He/She is a 10, but... flirts with everyone 'just to test if you get jealous.'",
             "He/She is a 10, but... gets you both kicked out or banned from places for doing stupid dares.",
-            "He/She is a 10, but... refuses to hold hands in public unless it's for an Instagram photo.",
-            "He/She is a 10, but... still hangs out with their ex because 'they're just best friends now.'",
-            "He/She is a 10, but... gets super competitive and mad over casual video games or board games.",
-            "He/She is a 10, but... takes forever to reply to messages when they are actively online.",
-            "He/She is a 10, but... acts totally different around their friends compared to when it's just you two.",
-            "He/She is a 10, but... borrows your clothes/hoodies and never gives them back.",
-            "He/She is a 10, but... chews loudly with their mouth open even at fancy places.",
-            "He/She is a 10, but... leaves you on read for 8 hours but posts 5 TikToks in the meantime.",
-            "He/She is a 10, but... talks bad about their best friend behind their back to you.",
-            "He/She is a 10, but... refuses to eat anywhere that isn't fast food.",
-            "He/She is a 10, but... gets mad when you hang out with your own group of friends.",
-            "He/She is a 10, but... always asks you to pay for everything.",
-            "He/She is a 10, but... takes 45 minutes to pick a movie to watch every single time.",
-            "He/She is a 10, but... listens to music on full volume through their phone speaker in public.",
-            "He/She is a 10, but... spoils the ending of every movie or TV show they've seen.",
-            "He/She is a 10, but... still talks about their middle school achievements like they're a legend."
+            "He/She is a 10, but... refuses to hold hands in public unless it's for an Instagram photo."
         ],
         twoTruthsOneLie: [
             "Share 2 TRUE facts and 1 LIE about your past teenage relationships or dating history!",
             "Share 2 TRUE rebellious things you've done in school and 1 LIE!",
             "Share 2 TRUE secrets you've kept from your parents and 1 LIE!",
             "Share 2 TRUE embarrassing moments in public and 1 LIE!",
-            "Share 2 TRUE hidden talents/skills you have and 1 LIE!",
-            "Share 2 TRUE weird food combinations you love and 1 LIE!",
-            "Share 2 TRUE injuries or hospital visits you've had and 1 LIE!",
-            "Share 2 TRUE places you have traveled to and 1 LIE!",
-            "Share 2 TRUE fears or phobias you have and 1 LIE!",
-            "Share 2 TRUE times you got caught doing something wrong and 1 LIE!",
-            "Share 2 TRUE celebrity encounters or sightings you had and 1 LIE!",
-            "Share 2 TRUE weird rumors people believed about you and 1 LIE!",
-            "Share 2 TRUE hobbies you used to be obsessed with and 1 LIE!",
-            "Share 2 TRUE items you have accidentally broken in school or home and 1 LIE!",
-            "Share 2 TRUE rules you broke this year and 1 LIE!",
-            "Share 2 TRUE times you faked being sick to get out of something and 1 LIE!",
-            "Share 2 TRUE pets/animals you've owned or touched and 1 LIE!",
-            "Share 2 TRUE weird dreams you had recently and 1 LIE!",
-            "Share 2 TRUE awkward text messages you accidentally sent and 1 LIE!",
-            "Share 2 TRUE items you've stolen or borrowed without asking and 1 LIE!"
+            "Share 2 TRUE hidden talents/skills you have and 1 LIE!"
         ],
         wouldYouRather: [
             "Would you rather... accidentally send a risky text to your crush's parents or your teacher?",
             "Would you rather... get caught sneaking out or get caught lying about who you were with?",
             "Would you rather... have your entire search history read out loud to the group or your private DMs?",
             "Would you rather... always have to double-date with your parents or never be allowed on dates?",
-            "Would you rather... accidentally ruin your friend's birthday party or your own date night?",
-            "Would you rather... wear school uniform forever or wear formal black-tie clothes every single day?",
-            "Would you rather... lose your phone for a month or lose your internet for a week?",
-            "Would you rather... walk in on your parents dancing cringe or have them walk in on you singing loud?",
-            "Would you rather... always have to speak in rhymes or sing every sentence you say?",
-            "Would you rather... be famous for an embarrassing meme or never be remembered by anyone?",
-            "Would you rather... eat hot sauce on every meal or only eat cold food for a month?",
-            "Would you rather... fail your main exam or get grounded for a entire month?",
-            "Would you rather... be forced to tell the truth for 24 hours or never speak for 3 days?",
-            "Would you rather... drop your phone in the toilet or spill coffee on your computer?",
-            "Would you rather... trip on stage in front of the school or rip your pants during gym class?",
-            "Would you rather... have your crush see your cringiest photo or hear your worst voice note?",
-            "Would you rather... only listen to music from 50 years ago or only watch silent movies?",
-            "Would you rather... live without AC in summer or live without heater in winter?",
-            "Would you rather... have 5 younger siblings or be an only child forever?",
-            "Would you rather... be able to read minds or be able to become invisible for 10 minutes a day?"
+            "Would you rather... accidentally ruin your friend's birthday party or your own date night?"
         ],
         mostLikely: [
             "Who is most likely to... start an argument in public and walk away dramatically?",
             "Who is most likely to... sneak out of the house for a late-night drive or party?",
             "Who is most likely to... get caught doing something rebellious at school?",
             "Who is most likely to... text an ex at 2 AM?",
-            "Who is most likely to... get banned from a local mall or venue?",
-            "Who is most likely to... become famous on TikTok overnight for something accidental?",
-            "Who is most likely to... sleep through 5 loud alarm clocks and miss an important exam?",
-            "Who is most likely to... spend all their pocket money on food in 2 days?",
-            "Who is most likely to... get lost in their own hometown using GPS?",
-            "Who is most likely to... survive a real zombie apocalypse?",
-            "Who is most likely to... laugh at a totally serious moment in class?",
-            "Who is most likely to... accidentally spoil a big movie ending for everyone?",
-            "Who is most likely to... lock their keys inside their car or house?",
-            "Who is most likely to... marry a celebrity they are obsessed with?",
-            "Who is most likely to... win a million dollars and spend it all in one week?",
-            "Who is most likely to... adopt 10 cats when they get older?",
-            "Who is most likely to... join a reality TV show and create major drama?",
-            "Who is most likely to... get stuck in an elevator and panic?",
-            "Who is most likely to... forget their best friend's birthday?",
-            "Who is most likely to... invent something crazy and get rich?",
-            "Who is most likely to... accidentally set off the school fire alarm?",
-            "Who is most likely to... live in a different country in 5 years?",
-            "Who is most likely to... fake their own identity on social media?",
-            "Who is most likely to... get caught sleeping during class?"
+            "Who is most likely to... get banned from a local mall or venue?"
         ],
         secretChronicles: [
             "Tell a funny story about a time you got completely lost in an unfamiliar place. Guess whose story this is!",
             "Describe a hilarious kitchen or cooking disaster you experienced. Guess who cooked this up!",
             "Share a story about an awkward encounter with a celebrity, teacher, or authority figure.",
             "Tell about a time you tried to pull off a secret prank and it completely backfired on you.",
-            "Describe your worst haircut or fashion disaster phase. Guess who rocked this look!",
-            "Share a story about a time you tried to look cool in front of someone and failed miserably.",
-            "Tell about a time you got stuck in a physical object or place (like a fence, chair, or door).",
-            "Describe a time you accidentally broke something expensive and pretended you didn't do it.",
-            "Share a funny story from an elementary or middle school field trip.",
-            "Tell about a weird encounter with an animal or pet that freaked you out.",
-            "Describe a funny miscommunication where you thought someone said something totally different.",
-            "Share a story about a time you accidentally entered the wrong room or vehicle.",
-            "Tell about a secret disaster that happened while your parents weren't home.",
-            "Describe a funny lie you told as a little kid that people actually believed.",
-            "Share a story about a bad reaction you had to a movie or haunted house.",
-            "Tell about a time you got caught doing something you weren't supposed to be doing.",
-            "Describe a gift you received that you secretly hated but had to pretend to love.",
-            "Share a funny story about a project or assignment you did last minute.",
-            "Tell about a time you fell down or slipped in public in a super dramatic way.",
-            "Describe a weird mystery from your childhood that was never officially solved."
+            "Describe your worst haircut or fashion disaster phase. Guess who rocked this look!"
         ],
         minuteOfMinutia: [
             "Share one tiny, weirdly specific detail from your week (e.g. staring at a microwave counting down from 3).",
             "Share a minor annoyance you encountered this week that drove you crazy.",
             "Share one random item currently sitting within 3 feet of you right now.",
             "What is the exact last thing you bought with your money?",
-            "Share a weird thought you had while taking a shower or lying in bed recently.",
-            "What was the last text message you received today? (Without context!)",
-            "Share one tiny victory or win you had this week.",
-            "What song is currently stuck in your head right now?",
-            "Share the weirdest tab currently open on your browser or phone.",
-            "What is the last photo you saved on your camera roll?",
-            "Share one food you ate yesterday that you regretted eating.",
-            "What is a random habit you do when you are bored or waiting?",
-            "Share the last video game or app you played for more than 10 minutes.",
-            "What is one random item in your bag or backpack right now?",
-            "Share a weird sound or noise you heard today that made you turn around.",
-            "What time did you actually fall asleep last night?",
-            "Share the last YouTube or TikTok video you rewatched twice.",
-            "What is one tiny chore you have been procrastinating on all day?",
-            "Share a random piece of trivia or fact you learned recently.",
-            "What color are your socks right now?"
+            "Share a weird thought you had while taking a shower or lying in bed recently."
         ],
         chatWaterfall: [
             "Describe your current morning routine using only three emojis.",
             "If your current mood was a weather forecast, describe it in 5 words.",
             "Name the weirdest snack combination you secretly love.",
             "Type your current life motto in 4 words or less.",
-            "If you were an animal right now, what animal would you be and why?",
-            "Name one movie title that describes your current school life.",
-            "Describe your dream vacation spot using only 3 emojis.",
-            "If you could only eat one food for the rest of your life, what is it?",
-            "What is your ultimate comfort movie when you are sick or tired?",
-            "Type a 3-word message to your future self 10 years from now.",
-            "If your life had a theme song, what song title would it be?",
-            "What is your favorite late-night snack when you stay up late?",
-            "Describe your aesthetic / vibe using only 3 descriptive words.",
-            "If you could have dinner with any historical figure, who would it be?",
-            "What is the single best fast food restaurant and why?",
-            "Name a superpower you would want for just 24 hours.",
-            "What is one trend on social media that you genuinely hate?",
-            "If you could instantly speak any foreign language fluently, which one?",
-            "Name your absolute favorite subject or topic to learn about.",
-            "Describe your perfect weekend day in one single sentence."
+            "If you were an animal right now, what animal would you be and why?"
+        ],
+        secretPromptPass: [
+            "Pass an anonymous prompt to a random player to answer! What do you want them to reveal?",
+            "Send a secret question to someone in this lobby. What is your burning question for them?",
+            "Challenge a random player with a secret prompt. What is your challenge?"
         ]
     };
 
@@ -724,6 +637,12 @@
         document.querySelectorAll('#timerGrid .setup-card').forEach(c => c.classList.remove('selected'));
         el.classList.add('selected');
         document.getElementById('timerSelect').value = sec;
+    }
+
+    function selectVotingTimer(sec, el) {
+        document.querySelectorAll('#votingTimerGrid .setup-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        document.getElementById('votingTimerSelect').value = sec;
     }
 
     function joinGame() {
@@ -809,25 +728,22 @@
                 return;
             }
 
-            db.ref('hostId').once('value', hostSnap => {
-                const hostId = hostSnap.val();
-                for (let id in players) {
-                    const li = document.createElement('li');
-                    const kickBtnHTML = (isUserHost && id !== myId) ? `<button class="kick-btn" onclick="kickPlayer('${id}')">Kick ❌</button>` : '';
-                    
-                    // Host tag completely hidden visually while maintaining authority & kick buttons internally
-                    li.innerHTML = `
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <div style="width:35px; height:35px; border-radius:50%; overflow:hidden; border:2px solid #38bdf8;">
-                                ${generateAvatarSVG(players[id].avatar)}
-                            </div>
-                            <span><b>${players[id].codename}</b></span>
+            for (let id in players) {
+                const li = document.createElement('li');
+                const kickBtnHTML = (isUserHost && id !== myId) ? `<button class="kick-btn" onclick="kickPlayer('${id}')">Kick ❌</button>` : '';
+                
+                // Lobby shows Real Names, hides fake/codenames in the lobby list
+                li.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <div style="width:35px; height:35px; border-radius:50%; overflow:hidden; border:2px solid #38bdf8;">
+                            ${generateAvatarSVG(players[id].avatar)}
                         </div>
-                        ${kickBtnHTML}
-                    `;
-                    list.appendChild(li);
-                }
-            });
+                        <span><b>${players[id].realName}</b></span>
+                    </div>
+                    ${kickBtnHTML}
+                `;
+                list.appendChild(li);
+            }
         });
 
         db.ref('gameState').on('value', async snapshot => {
@@ -837,12 +753,22 @@
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('start-countdown-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('identity-guessing-screen').classList.add('hidden');
             document.getElementById('end-countdown-screen').classList.add('hidden');
             document.getElementById('reveal-screen').classList.add('hidden');
 
             if (state.phase === 'countdown_start') {
                 document.getElementById('start-countdown-screen').classList.remove('hidden');
                 document.getElementById('startCountdownNum').innerText = state.startCountdown || 3;
+                return;
+            }
+
+            if (state.phase === 'identity_guessing') {
+                if (localTimerInterval) clearInterval(localTimerInterval);
+                if (localVotingTimerInterval) clearInterval(localVotingTimerInterval);
+                document.getElementById('voteProgressBadge').classList.add('hidden');
+                document.getElementById('identity-guessing-screen').classList.remove('hidden');
+                renderIdentityGuessingScreen(state);
                 return;
             }
 
@@ -854,6 +780,7 @@
 
             if (state.gameOver) {
                 if (localTimerInterval) clearInterval(localTimerInterval);
+                if (localVotingTimerInterval) clearInterval(localVotingTimerInterval);
                 document.getElementById('voteProgressBadge').classList.add('hidden');
                 document.getElementById('reveal-screen').classList.remove('hidden');
                 
@@ -874,6 +801,7 @@
 
             if (state.isSkipped) {
                 if (localTimerInterval) clearInterval(localTimerInterval);
+                if (localVotingTimerInterval) clearInterval(localVotingTimerInterval);
                 document.getElementById('gameTitle').innerText = "Turn Skipped!";
                 document.getElementById('skipNoticeSection').classList.remove('hidden');
                 document.getElementById('skipNoticeText').innerText = `⏱️ ${state.speakerCodename} ran out of time and skipped their turn!`;
@@ -893,6 +821,7 @@
             const speakerId = state.speakerId;
             const hasSubmitted = state.currentResponse !== null && state.currentResponse !== undefined;
 
+            // Turn Timer for Speaker Writing Phase
             if (state.turnTimerSec > 0 && !hasSubmitted && state.turnStartTime) {
                 startLocalTimer(state.turnStartTime, state.turnTimerSec, speakerId === myId, state);
             } else {
@@ -912,10 +841,16 @@
                 const badge = document.getElementById('voteProgressBadge');
                 badge.classList.remove('hidden');
                 badge.innerText = `📊 ${currentVotes}/${totalVoters} Guessed`;
+
+                // Voting Timer for Listener Guessing Phase
+                if (state.votingTimerSec > 0 && state.votingStartTime) {
+                    startLocalVotingTimer(state.votingStartTime, state.votingTimerSec, state, players);
+                }
             }
 
             if (myId === speakerId) {
                 document.getElementById('gameTitle').innerText = "Your Turn to Answer!";
+                document.getElementById('speakerCodenameBadge').innerText = `Posting as Secret Codename: ${myData.codename}`;
                 if (!hasSubmitted) {
                     document.getElementById('speakerSection').classList.remove('hidden');
                     document.getElementById('speakerPrompt').innerText = state.currentPrompt;
@@ -985,10 +920,38 @@
         localTimerInterval = setInterval(updateTimer, 1000);
     }
 
+    function startLocalVotingTimer(startTime, totalSec, state, players) {
+        if (localVotingTimerInterval) clearInterval(localVotingTimerInterval);
+
+        const updateVotingTimer = () => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const remaining = totalSec - elapsed;
+
+            const el = document.getElementById('votingTimerDisplay');
+            if (remaining <= 0) {
+                clearInterval(localVotingTimerInterval);
+                if (el) el.classList.add('hidden');
+                if (isUserHost) {
+                    advanceRound(state, players, false);
+                }
+                return;
+            }
+
+            if (el) {
+                el.classList.remove('hidden');
+                el.querySelector('span').innerText = remaining;
+            }
+        };
+
+        updateVotingTimer();
+        localVotingTimerInterval = setInterval(updateVotingTimer, 1000);
+    }
+
     async function startGameSession() {
         const mode = document.getElementById('gameModeSelect').value;
         const roundsPerPlayer = parseInt(document.getElementById('roundsSelect').value);
         let turnTimerSec = parseInt(document.getElementById('timerSelect').value);
+        let votingTimerSec = parseInt(document.getElementById('votingTimerSelect').value);
         
         if (mode === 'minuteOfMinutia') turnTimerSec = 60;
 
@@ -1023,6 +986,7 @@
             currentGuesses: {},
             history: [],
             turnTimerSec: turnTimerSec,
+            votingTimerSec: votingTimerSec,
             turnStartTime: Date.now(),
             isSkipped: false,
             gameOver: false,
@@ -1049,6 +1013,7 @@
 
     function resetGameSession() {
         if (localTimerInterval) clearInterval(localTimerInterval);
+        if (localVotingTimerInterval) clearInterval(localVotingTimerInterval);
         db.ref('gameState').remove();
         db.ref('chat').remove();
         db.ref('hostId').remove();
@@ -1060,7 +1025,10 @@
         const text = document.getElementById('speakerResponseInput').value.trim();
         if (!text) { alert("Please type an answer first!"); return; }
         document.getElementById('speakerResponseInput').value = "";
-        db.ref('gameState/currentResponse').set(text);
+        db.ref('gameState').update({
+            currentResponse: text,
+            votingStartTime: Date.now()
+        });
     }
 
     function loadGuessOptions() {
@@ -1068,14 +1036,21 @@
             const players = snapshot.val() || {};
             const select = document.getElementById('guessSelect');
             select.innerHTML = '';
+            
+            let playerList = [];
             for (let id in players) {
                 if (id !== myId) {
-                    const opt = document.createElement('option');
-                    opt.value = players[id].realName;
-                    opt.innerText = players[id].realName;
-                    select.appendChild(opt);
+                    playerList.push(players[id].realName);
                 }
             }
+            playerList = shuffleArray(playerList);
+
+            playerList.forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.innerText = name;
+                select.appendChild(opt);
+            });
         });
     }
 
@@ -1114,6 +1089,7 @@
     }
 
     async function advanceRound(state, players, wasSkipped = false) {
+        if (localVotingTimerInterval) clearInterval(localVotingTimerInterval);
         let history = state.history || [];
         
         history.push({
@@ -1139,15 +1115,76 @@
                 currentResponse: null,
                 currentGuesses: {},
                 turnStartTime: Date.now(),
+                votingStartTime: null,
                 isSkipped: false,
                 history: history
             });
         } else {
-            triggerEndCountdown(history);
+            db.ref('gameState').update({
+                phase: 'identity_guessing',
+                history: history,
+                identityGuesses: {}
+            });
         }
     }
 
-    async function triggerEndCountdown(history) {
+    async function renderIdentityGuessingScreen(state) {
+        const pSnap = await db.ref('players').once('value');
+        const players = pSnap.val() || {};
+        const container = document.getElementById('identityGuessList');
+        container.innerHTML = '';
+
+        let playerEntries = [];
+        for (let id in players) {
+            if (id !== myId) {
+                playerEntries.push(players[id]);
+            }
+        }
+
+        playerEntries.forEach(p => {
+            const div = document.createElement('div');
+            div.style.background = "#334155";
+            div.style.padding = "12px";
+            div.style.borderRadius = "8px";
+            div.style.marginBottom = "10px";
+
+            let allCodenames = Object.values(players).map(pl => pl.codename);
+            allCodenames = shuffleArray(allCodenames);
+
+            let optionsHTML = `<option value="">-- Select Codename for ${p.realName} --</option>`;
+            allCodenames.forEach(code => {
+                optionsHTML += `<option value="${code}">${code}</option>`;
+            });
+
+            div.innerHTML = `
+                <p style="margin:0 0 6px 0; font-weight:bold;">Real Name: <span style="color:#38bdf8;">${p.realName}</span></p>
+                <select id="identity_guess_${p.realName}" style="margin-top:0;">${optionsHTML}</select>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    async function submitIdentityGuesses() {
+        const pSnap = await db.ref('players').once('value');
+        const players = pSnap.val() || {};
+        let identityGuesses = {};
+
+        for (let id in players) {
+            if (id !== myId) {
+                const p = players[id];
+                const selectedCode = document.getElementById(`identity_guess_${p.realName}`).value;
+                if (selectedCode) {
+                    identityGuesses[p.realName] = selectedCode;
+                }
+            }
+        }
+
+        await db.ref(`gameState/identityGuesses/${myId}`).set(identityGuesses);
+        triggerEndCountdown(db.ref('gameState/history').once('value').then(s => s.val()));
+    }
+
+    async function triggerEndCountdown(historyPromise) {
+        const history = await historyPromise;
         await db.ref('gameState').update({ phase: 'end_countdown', endCountdown: 3, history: history });
         let count = 3;
         if (endCountdownInterval) clearInterval(endCountdownInterval);
@@ -1164,9 +1201,10 @@
 
     async function renderPodiumAndLeaderboard(state) {
         const history = state.history || [];
-        const scores = calculateScores(history);
         const pSnap = await db.ref('players').once('value');
         const players = pSnap.val() || {};
+
+        const scores = calculateScores(history, state.identityGuesses || {}, players);
 
         const timesGuessed = {};
         Object.values(players).forEach(p => timesGuessed[p.realName] = 0);
@@ -1242,17 +1280,81 @@
             lbContainer.innerHTML = "<p>No scores recorded.</p>";
         } else {
             sortedScores.forEach((name, rank) => {
-                const div = document.createElement('div');
-                div.className = 'leaderboard-card';
-                div.innerHTML = `
-                    <div class="leaderboard-rank">#${rank + 1}</div>
-                    <div class="leaderboard-info">
-                        <div class="leaderboard-name">${name}</div>
-                        <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">Correct Guesses Score</div>
+                let pData = Object.values(players).find(p => p.realName === name);
+                const gameTag = pData ? pData.codename : "";
+
+                let correctCount = 0;
+                let incorrectCount = 0;
+                history.forEach(h => {
+                    for (let gId in h.guesses) {
+                        const g = h.guesses[gId];
+                        if (g.guesserRealName === name) {
+                            if (g.guessedRealName === h.speakerRealName) correctCount++;
+                            else incorrectCount++;
+                        }
+                    }
+                });
+
+                let guessedCorrectlyByOthersCount = 0;
+                let breakdownText = "";
+                history.forEach(h => {
+                    if (h.speakerRealName === name && !h.wasSkipped) {
+                        breakdownText += `Round ${h.round}:\n"${h.prompt}"\nYour answer: ${h.response}\n\n`;
+                        
+                        let correctList = [];
+                        let incorrectList = [];
+                        let detailsList = [];
+
+                        for (let gId in h.guesses) {
+                            const g = h.guesses[gId];
+                            const isCorrect = g.guessedRealName === h.speakerRealName;
+                            if (isCorrect) {
+                                correctList.push(g.guesserRealName);
+                                guessedCorrectlyByOthersCount++;
+                            } else {
+                                incorrectList.push(g.guesserRealName);
+                            }
+
+                            detailsList.push({
+                                guesser: g.guesserRealName,
+                                guessed: g.guessedRealName,
+                                lie: g.guessedLie,
+                                agree: g.agreeDisagree
+                            });
+                        }
+
+                        let corrStr = correctList.length > 0 ? correctList.join('\n') : "None";
+                        let incorrStr = incorrectList.length > 0 ? incorrectList.join('\n') : "None";
+
+                        breakdownText += `Correct: ${correctList.length} Incorrect: ${incorrectList.length}\nCorrect:\n${corrStr}\n\nIncorrect:\n${incorrStr}\n\n`;
+
+                        detailsList.forEach(d => {
+                            breakdownText += `${d.guesser}'s response:\n${d.guessed}\n${d.agree ? d.agree : ''}\n\n`;
+                        });
+                    }
+                });
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'result-player-card';
+                cardDiv.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3 style="margin:0; color:#38bdf8;">#${rank + 1} ${name} <span style="font-size:14px; color:var(--text-muted); font-weight:normal;">(${gameTag})</span></h3>
+                            <p style="margin:6px 0 0 0; font-size:14px;">Total Score: <b>${scores[name]} pts</b></p>
+                        </div>
+                        <div class="stat-badge">Guessed correctly by ${guessedCorrectlyByOthersCount} people</div>
                     </div>
-                    <div class="leaderboard-score-badge">${scores[name]} pts</div>
+
+                    <div class="result-stats-row">
+                        <div class="stat-badge" style="background:#22c55e; color:#0f172a;">Correct: ${correctCount}</div>
+                        <div class="stat-badge" style="background:#ef4444; color:white;">Incorrect: ${incorrectCount}</div>
+                    </div>
+
+                    <button onclick="toggleBreakdown('${name.replace(/\s+/g, '_')}')" style="margin-top:12px; background:#0284c7; padding:8px; font-size:14px; width:auto;">See Results ("Who guessed you?")</button>
+                    
+                    <div id="breakdown_${name.replace(/\s+/g, '_')}" class="breakdown-box hidden">${breakdownText || "No active turns recorded."}</div>
                 `;
-                lbContainer.appendChild(div);
+                lbContainer.appendChild(cardDiv);
             });
         }
 
@@ -1290,8 +1392,17 @@
         });
     }
 
-    function calculateScores(history) {
+    function toggleBreakdown(nameKey) {
+        const box = document.getElementById(`breakdown_${nameKey}`);
+        if (box) {
+            box.classList.toggle('hidden');
+        }
+    }
+
+    function calculateScores(history, identityGuesses, players) {
         const scores = {};
+        Object.values(players).forEach(p => scores[p.realName] = 0);
+
         history.forEach(h => {
             const correctRealName = h.speakerRealName;
             for (let gId in h.guesses) {
@@ -1302,6 +1413,24 @@
                 }
             }
         });
+
+        for (let guesserId in identityGuesses) {
+            const guesses = identityGuesses[guesserId];
+            const guesserPlayer = players[guesserId];
+            if (!guesserPlayer) continue;
+            const guesserName = guesserPlayer.realName;
+
+            for (let realTargetName in guesses) {
+                const guessedCodename = guesses[realTargetName];
+                const targetPlayer = Object.values(players).find(p => p.realName === realTargetName);
+                if (targetPlayer && targetPlayer.codename === guessedCodename) {
+                    if (scores[guesserName] !== undefined) {
+                        scores[guesserName] += 1;
+                    }
+                }
+            }
+        }
+
         return scores;
     }
 
